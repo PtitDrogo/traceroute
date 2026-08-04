@@ -26,7 +26,9 @@
 
 // Since ICMP Header is 8 bytes, 56 is standard so that its 64 total
 #define PAYLOAD_SIZE 56
-#define DEFAULT_MAX_TTL 30
+#define DEFAULT_TTL 30
+#define MAX_TTL 255
+#define MAX_PROBES 10
 
 #define HELP_STRING                                                                                                    \
     "Usage\n"                                                                                                          \
@@ -41,32 +43,37 @@ struct ping_packet {
     char payload[UINT16_MAX];
 };
 
-struct ping_result {
-    struct timespec start_time;
-
-    // These too can really easily be moved away from the struct tbh.
-    char *arg_address;
+struct response_data {
+    struct timespec start_time; // WIll have to get rid of this
     char resolved_address[NI_MAXHOST];
+};
+
+struct probe_record {
+    struct timespec sent_at;
+    int ttl;
+    bool replied;
 };
 
 struct options {
     uint8_t max_ttl;
-    // nothing yet !
 };
 
 struct ping_context {
-    struct addrinfo *destination_addrinfo;
-    struct ping_result res;
+    struct probe_record probes[MAX_TTL][MAX_PROBES];
+
+    struct response_data res;
     struct options options;
+
+    // Basic start data
+    char *arg_address;
+    struct addrinfo *destination_addrinfo;
     int sock;
-    double interval_s;
-    uint16_t seq;
 };
 
 // send
 void send_packet(struct ping_packet *packet, struct ping_context *ctx);
-void build_packet(struct ping_packet *packet, struct ping_context *ctx);
-void update_packet(struct ping_packet *packet, struct ping_context *ctx);
+void build_packet(struct ping_packet *packet);
+void update_packet(struct ping_packet *packet);
 void create_socket(struct options options, struct ping_context *ctx);
 void update_socket(struct ping_context *ctx, uint8_t ttl);
 uint16_t checksum(const uint16_t *data, size_t size);
@@ -77,7 +84,7 @@ void handle_reply(struct ping_context *ctx);
 
 // helpers
 void cleanup(struct ping_context *ctx);
-int32_t get_hostname_string_from_ip(const char *ip_str, char *dest_buf, size_t buf_len);
+void get_hostname_string_from_ip(const char *ip_str, char *dest_buf, size_t buf_len);
 double compute_time_difference(const struct timespec past_time);
 
 // parsing
@@ -87,5 +94,8 @@ long parse_num(struct ping_context *ctx, uint32_t max_range, char opt_char);
 // Getting rid the \\ printing
 void disable_echoctl(void);
 void restore_termios(void);
+
+// print
+void print_start_string(struct ping_context ctx);
 
 #endif

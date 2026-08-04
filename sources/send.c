@@ -1,12 +1,8 @@
 
 #include "../includes/ping.h"
 
-#define HOSTNAME_OK 0
-#define HOSTNAME_FALLBACK_IP 1
-#define HOSTNAME_ERR_INVALID -1
-
 void send_packet(struct ping_packet *packet, struct ping_context *ctx) {
-    update_packet(packet, ctx);
+    update_packet(packet);
     size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
     int err = sendto(ctx->sock, packet, packet_size, 0, ctx->destination_addrinfo->ai_addr,
                      ctx->destination_addrinfo->ai_addrlen);
@@ -15,32 +11,22 @@ void send_packet(struct ping_packet *packet, struct ping_context *ctx) {
         cleanup(ctx);
         exit(1);
     }
-    ctx->seq += 1;
 }
 
-int32_t get_hostname_string_from_ip(const char *ip_str, char *dest_buf, size_t buf_len) {
+// This write the proper MaybeResolvedAddressString (ip string) to dest buf
+void get_hostname_string_from_ip(const char *ip_str, char *dest_buf, size_t buf_len) {
     if (!ip_str || !dest_buf || buf_len == 0)
-        return HOSTNAME_ERR_INVALID;
+        return ;
 
     struct sockaddr_in sa = {0};
     sa.sin_family = AF_INET;
+    if (inet_pton(AF_INET, ip_str, &sa.sin_addr) <= 0)
+        return;
 
-    if (inet_pton(AF_INET, ip_str, &sa.sin_addr) <= 0) {
-        return HOSTNAME_ERR_INVALID;
-    }
-
-    int err = getnameinfo((struct sockaddr *)&sa, sizeof(sa), dest_buf, buf_len, NULL, 0,
-                          NI_NAMEREQD); // This flag is here to guarante failure if a name doesnt exist.
-
-    if (err != 0) {
-        snprintf(dest_buf, buf_len, "%s", ip_str);
-        return HOSTNAME_FALLBACK_IP;
-    } else {
-        char temp_host[NI_MAXHOST];
-        snprintf(temp_host, sizeof(temp_host), "%s", dest_buf);
-        snprintf(dest_buf, buf_len, "%s (%s)", temp_host, ip_str);
-    }
-    return HOSTNAME_OK;
+    char host[NI_MAXHOST];
+    getnameinfo((struct sockaddr *)&sa, sizeof(sa), host, sizeof(host), NULL, 0, 0);
+    snprintf(dest_buf, buf_len, "%s (%s)", host, ip_str);
+    return;
 }
 
 // returns the time difference between the given timespec and now.
@@ -54,7 +40,7 @@ double compute_time_difference(struct timespec past_time) {
     return rtt;
 }
 
-void build_packet(struct ping_packet *packet, struct ping_context *ctx) {
+void build_packet(struct ping_packet *packet) {
     size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
     size_t start_idx = 0;
     clock_gettime(CLOCK_REALTIME, (struct timespec *)packet->payload);
@@ -64,15 +50,15 @@ void build_packet(struct ping_packet *packet, struct ping_context *ctx) {
         packet->payload[i] = i;
     }
 
-    packet->header.un.echo.sequence = htons(ctx->seq);
+    packet->header.un.echo.sequence = htons(1);
     packet->header.checksum = 0;
     packet->header.checksum = checksum((uint16_t *)packet, packet_size);
 }
 
-void update_packet(struct ping_packet *packet, struct ping_context *ctx) {
+void update_packet(struct ping_packet *packet) {
     size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
     clock_gettime(CLOCK_REALTIME, (struct timespec *)packet->payload);
-    packet->header.un.echo.sequence = htons(ctx->seq);
+    packet->header.un.echo.sequence = htons(1);
     packet->header.checksum = 0;
     packet->header.checksum = checksum((uint16_t *)packet, packet_size);
 }

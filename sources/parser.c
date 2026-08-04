@@ -40,7 +40,7 @@ void parse_flags(struct ping_context *ctx, int argc, char *argv[]) {
         exit(1);
     }
 
-    ctx->res.arg_address = argv[optind];
+    ctx->arg_address = argv[optind];
     return;
 }
 

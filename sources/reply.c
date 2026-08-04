@@ -29,15 +29,14 @@ void handle_reply(struct ping_context *ctx) {
 
     get_hostname_string_from_ip(ip_addr, ctx->res.resolved_address, sizeof(ctx->res.resolved_address));
 
-    if (reply->header.type == ICMP_ECHOREPLY && ntohs(reply->header.un.echo.id) == (uint16_t)getpid()) {
+    if ((reply->header.type == ICMP_ECHOREPLY && ntohs(reply->header.un.echo.id) == (uint16_t)getpid()) ||
+        reply->header.type == ICMP_TIME_EXCEEDED) {
         update_ping_info(time_rtt, ctx);
-        printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.1f ms\n", bytes_received - ip_hdr_len,
-               ctx->res.resolved_address, ntohs(reply->header.un.echo.sequence), ip->ttl, time_rtt);
-        cleanup(ctx);
-        exit(EXIT_SUCCESS);
-    } else if (reply->header.type == ICMP_TIME_EXCEEDED) {
-        printf("From %s icmp_seq=%d Time to live exceeded\n", ctx->res.resolved_address,
-               ntohs(reply->header.un.echo.sequence));
+        printf("%s %f ms\n", ctx->res.resolved_address, time_rtt);
+        if (reply->header.type != ICMP_TIME_EXCEEDED) {
+            cleanup(ctx);
+            exit(EXIT_SUCCESS);
+        }
     } else if (reply->header.type == ICMP_DEST_UNREACH) {
         printf("Destination Host Unreachable\n");
     } else {
