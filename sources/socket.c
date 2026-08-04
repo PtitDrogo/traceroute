@@ -1,24 +1,19 @@
 #include "../includes/ping.h"
 
 void create_socket(struct options options, struct ping_context *ctx) {
+    // For now were using ICMP, but later the protocol will be a variable.
+    (void)options;
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
-    if (options.dont_route) {
-        int enable = 1;
-        if (setsockopt(sock, SOL_SOCKET, SO_DONTROUTE, &enable, sizeof(enable)) < 0) {
-            perror("ping: setsockopt SO_DONTROUTE");
-            cleanup(ctx);
-            exit(1);
-        }
-    }
-    if (options.ttl) {
-        if (setsockopt(sock, IPPROTO_IP, IP_TTL, &options.ttl, sizeof(options.ttl)) < 0) {
-            perror("ping: setsockopt IP_TTL");
-            cleanup(ctx);
-            exit(1);
-        }
-    }
+    struct timeval tv = {.tv_sec = 1, .tv_usec = 0};
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
     ctx->sock = sock;
-    if (options.verbose)
-        print_socket_verbose(ctx);
     return;
+}
+
+void update_socket(struct ping_context *ctx, uint8_t ttl) {
+    if (setsockopt(ctx->sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) < 0) {
+        perror("traceroute: setsockopt IP_TTL");
+        cleanup(ctx);
+        exit(1);
+    }
 }

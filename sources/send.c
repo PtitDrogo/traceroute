@@ -6,9 +6,8 @@
 #define HOSTNAME_ERR_INVALID -1
 
 void send_packet(struct ping_packet *packet, struct ping_context *ctx) {
-    struct sockaddr_in *addr = (struct sockaddr_in *)ctx->destination_addrinfo->ai_addr;
     update_packet(packet, ctx);
-    size_t packet_size = sizeof(struct icmphdr) + ctx->options.payload_size;
+    size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
     int err = sendto(ctx->sock, packet, packet_size, 0, ctx->destination_addrinfo->ai_addr,
                      ctx->destination_addrinfo->ai_addrlen);
     if (err == -1) {
@@ -16,24 +15,12 @@ void send_packet(struct ping_packet *packet, struct ping_context *ctx) {
         cleanup(ctx);
         exit(1);
     }
-    if (ctx->res.packets_transmitted == 0) {
-        printf("PING %s (%s) %d(%ld) bytes of data.\n", ctx->res.arg_address, inet_ntoa(addr->sin_addr),
-               ctx->options.payload_size, packet_size + sizeof(struct iphdr));
-    } else if (ctx->interval_s == INTERVAL_FLOOD_S) {
-        write(STDOUT_FILENO, ".", 1);
-    }
-    ctx->res.packets_transmitted += 1;
     ctx->seq += 1;
 }
 
-int32_t get_hostname_string_from_ip(const char *ip_str, char *dest_buf, size_t buf_len, bool no_dns) {
+int32_t get_hostname_string_from_ip(const char *ip_str, char *dest_buf, size_t buf_len) {
     if (!ip_str || !dest_buf || buf_len == 0)
         return HOSTNAME_ERR_INVALID;
-
-    if (no_dns) {
-        snprintf(dest_buf, buf_len, "%s", ip_str);
-        return HOSTNAME_FALLBACK_IP;
-    }
 
     struct sockaddr_in sa = {0};
     sa.sin_family = AF_INET;
@@ -43,7 +30,7 @@ int32_t get_hostname_string_from_ip(const char *ip_str, char *dest_buf, size_t b
     }
 
     int err = getnameinfo((struct sockaddr *)&sa, sizeof(sa), dest_buf, buf_len, NULL, 0,
-                          NI_NAMEREQD); // This flag is here to garantue failure if a name doesnt exist.
+                          NI_NAMEREQD); // This flag is here to guarante failure if a name doesnt exist.
 
     if (err != 0) {
         snprintf(dest_buf, buf_len, "%s", ip_str);
@@ -68,50 +55,32 @@ double compute_time_difference(struct timespec past_time) {
 }
 
 void build_packet(struct ping_packet *packet, struct ping_context *ctx) {
-    size_t packet_size = sizeof(struct icmphdr) + ctx->options.payload_size;
+    size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
     size_t start_idx = 0;
-    if (ctx->options.payload_size >= sizeof(struct timespec)) {
-        clock_gettime(CLOCK_REALTIME, (struct timespec *)packet->payload);
-        start_idx = sizeof(struct timespec);
+    clock_gettime(CLOCK_REALTIME, (struct timespec *)packet->payload);
+    start_idx = sizeof(struct timespec);
+
+    for (size_t i = start_idx; i < PAYLOAD_SIZE; i++) {
+        packet->payload[i] = i;
     }
 
-    if (ctx->options.pattern.len == 0) {
-        for (size_t i = start_idx; i < ctx->options.payload_size; i++) {
-            packet->payload[i] = (char)i;
-        }
-    } else {
-        for (size_t i = start_idx; i < ctx->options.payload_size; i++) {
-            packet->payload[i] = ctx->options.pattern.buf[i % ctx->options.pattern.len];
-        }
-    }
     packet->header.un.echo.sequence = htons(ctx->seq);
     packet->header.checksum = 0;
     packet->header.checksum = checksum((uint16_t *)packet, packet_size);
 }
 
 void update_packet(struct ping_packet *packet, struct ping_context *ctx) {
-    size_t packet_size = sizeof(struct icmphdr) + ctx->options.payload_size;
-    if (ctx->options.payload_size >= sizeof(struct timespec)) {
-        clock_gettime(CLOCK_REALTIME, (struct timespec *)packet->payload);
-    }
+    size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
+    clock_gettime(CLOCK_REALTIME, (struct timespec *)packet->payload);
     packet->header.un.echo.sequence = htons(ctx->seq);
     packet->header.checksum = 0;
     packet->header.checksum = checksum((uint16_t *)packet, packet_size);
 }
 
 void update_ping_info(double time_rtt, struct ping_context *ctx) {
-    struct ping_result *res = &ctx->res;
-    res->packets_received += 1;
-    if (res->packets_received == 0) {
-        res->rrt_in.ewma = time_rtt;
-    } else {
-        res->rrt_in.ewma = (1 - ALPHA) * res->rrt_in.ewma + ALPHA * time_rtt;
-    }
-
-    res->rrt_in.sum_rtt += time_rtt;
-    res->rrt_in.sum_rtt_squared += pow(time_rtt, 2);
-    res->rrt_in.max_time = fmax(res->rrt_in.max_time, time_rtt);
-    res->rrt_in.min_time = fmin(res->rrt_in.min_time, time_rtt);
+    (void)time_rtt;
+    (void)ctx;
+    // nothing here ...
 }
 
 void cleanup(struct ping_context *ctx) {
