@@ -2,26 +2,19 @@
 #define FT_PING
 
 #include <arpa/inet.h>
-#include <assert.h>
-#include <netinet/in.h>
 #include <stdio.h>
 
 #include <netdb.h>
 #include <stdint.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
 #include <netinet/ip_icmp.h>
 
 #include <errno.h>
-#include <math.h>
-#include <signal.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
 #include <termios.h>
 
 // Since ICMP Header is 8 bytes, 56 is standard so that its 64 total

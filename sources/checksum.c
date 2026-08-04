@@ -1,4 +1,4 @@
-#include "../includes/ping.h"
+#include "../includes/traceroute.h"
 
 uint16_t checksum(const uint16_t *data, size_t size) {
     uint32_t sum = 0;

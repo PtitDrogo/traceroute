@@ -1,4 +1,4 @@
-#include "../includes/ping.h"
+#include "../includes/traceroute.h"
 
 void print_start_string(struct ping_context ctx) {
     char ip_str[INET_ADDRSTRLEN];

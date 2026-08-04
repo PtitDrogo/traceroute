@@ -1,4 +1,4 @@
-#include "../includes/ping.h"
+#include "../includes/traceroute.h"
 
 static void parse_icmp_reply(char *response, struct icmphdr **outer_icmp, struct ping_packet **reply);
 

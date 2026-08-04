@@ -1,11 +1,11 @@
-#include "../includes/ping.h"
+#include "../includes/traceroute.h"
 
 static void init(struct ping_context *ctx);
 
 int main(int argc, char *argv[]) {
     if (geteuid() != 0) {
         printf("ping: sudo rights are required, exiting.\n");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     struct ping_context ctx = {0};

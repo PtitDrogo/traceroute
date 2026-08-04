@@ -1,4 +1,4 @@
-#include "../includes/ping.h"
+#include "../includes/traceroute.h"
 
 // struct probe_record {
 //     struct timespec sent_at;

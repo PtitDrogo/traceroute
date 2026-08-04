@@ -1,4 +1,4 @@
-#include "../includes/ping.h"
+#include "../includes/traceroute.h"
 
 
 struct termios orig_termios;

@@ -1,4 +1,4 @@
-#include "../includes/ping.h"
+#include "../includes/traceroute.h"
 
 void parse_flags(struct ping_context *ctx, int argc, char *argv[]) {
     int32_t opt;
