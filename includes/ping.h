@@ -73,7 +73,7 @@ struct ping_context {
 // send
 void send_packet(struct ping_packet *packet, struct ping_context *ctx);
 void build_packet(struct ping_packet *packet);
-void update_packet(struct ping_packet *packet);
+void update_packet(struct ping_packet *packet, uint8_t ttl, uint8_t probe_index);
 void create_socket(struct options options, struct ping_context *ctx);
 void update_socket(struct ping_context *ctx, uint8_t ttl);
 uint16_t checksum(const uint16_t *data, size_t size);
@@ -97,5 +97,8 @@ void restore_termios(void);
 
 // print
 void print_start_string(struct ping_context ctx);
+
+//probe
+struct timespec get_probe_time(struct probe_record probes[MAX_TTL][MAX_PROBES], uint16_t seq);
 
 #endif

@@ -31,16 +31,22 @@ int main(int argc, char *argv[]) {
     clock_gettime(CLOCK_REALTIME, &ctx.res.start_time);
 
     print_start_string(ctx);
-    for (uint8_t i = 1; i < DEFAULT_TTL; i++) {
-        update_socket(&ctx, i);
-        send_packet(&packet, &ctx);
-        handle_reply(&ctx);
+    for (uint8_t ttl = 1; ttl < DEFAULT_TTL; ttl++) {
+        for (uint8_t probe_index = 0; probe_index < 1; probe_index++) { // will be modifiable after.
+            update_socket(&ctx, ttl);
+            update_packet(&packet, ttl, probe_index);
+
+            clock_gettime(CLOCK_REALTIME, &ctx.probes[ttl][probe_index].sent_at);
+            ctx.probes[ttl][probe_index].ttl = ttl;
+            ctx.probes[ttl][probe_index].replied = false;
+
+            send_packet(&packet, &ctx);
+            handle_reply(&ctx);
+        }
     }
 
     cleanup(&ctx);
     return EXIT_FAILURE; // This is actually a failure if we get here.
 }
 
-static void init(struct ping_context *ctx) {
-    (void)ctx;
-}
+static void init(struct ping_context *ctx) { (void)ctx; }

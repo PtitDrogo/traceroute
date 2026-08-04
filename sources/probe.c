@@ -18,9 +18,9 @@ struct timespec sent_at = probes[ttl][probe_idx].sent_at;
 
 */
 
-void init_probes(struct probe_record probes) {}
+void init_probes(struct probe_record probes) { (void)probes; }
 
-struct timespec get_probe_time(struct probe_record probes[MAX_TTL][MAX_PROBES], int seq) {
+struct timespec get_probe_time(struct probe_record probes[MAX_TTL][MAX_PROBES], uint16_t seq) {
     int ttl = seq / 10;
     int probe_idx = seq % 10;
     return probes[ttl][probe_idx].sent_at;

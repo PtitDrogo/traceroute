@@ -2,7 +2,6 @@
 #include "../includes/ping.h"
 
 void send_packet(struct ping_packet *packet, struct ping_context *ctx) {
-    update_packet(packet);
     size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
     int err = sendto(ctx->sock, packet, packet_size, 0, ctx->destination_addrinfo->ai_addr,
                      ctx->destination_addrinfo->ai_addrlen);
@@ -16,7 +15,7 @@ void send_packet(struct ping_packet *packet, struct ping_context *ctx) {
 // This write the proper MaybeResolvedAddressString (ip string) to dest buf
 void get_hostname_string_from_ip(const char *ip_str, char *dest_buf, size_t buf_len) {
     if (!ip_str || !dest_buf || buf_len == 0)
-        return ;
+        return;
 
     struct sockaddr_in sa = {0};
     sa.sin_family = AF_INET;
@@ -55,10 +54,11 @@ void build_packet(struct ping_packet *packet) {
     packet->header.checksum = checksum((uint16_t *)packet, packet_size);
 }
 
-void update_packet(struct ping_packet *packet) {
+void update_packet(struct ping_packet *packet, uint8_t ttl, uint8_t probe_index) {
     size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
     clock_gettime(CLOCK_REALTIME, (struct timespec *)packet->payload);
     packet->header.un.echo.sequence = htons(1);
+    packet->header.un.echo.sequence = htons((uint16_t)(ttl * 10 + probe_index));
     packet->header.checksum = 0;
     packet->header.checksum = checksum((uint16_t *)packet, packet_size);
 }
