@@ -70,22 +70,65 @@ int main(int argc, char *argv[]) {
 
     }
 
+
+    struct probe_record probes[MAX_TTL][MAX_PROBES];
     */
+    // We send the first few hops.
 
-    for (uint8_t ttl = 1; ttl < DEFAULT_TTL; ttl++) {
-        for (uint8_t probe_index = 0; probe_index < 1; probe_index++) { // will be modifiable after.
-            update_socket(&ctx, ttl);
-            update_packet(&packet, ttl, probe_index);
-
-            clock_gettime(CLOCK_REALTIME, &ctx.probes[ttl][probe_index].sent_at);
-            ctx.probes[ttl][probe_index].ttl = ttl;
-            ctx.probes[ttl][probe_index].replied = false;
-
-            send_packet(&packet, &ctx);
-            handle_reply(&ctx);
-        }
+    // I have 5 probes, max probes is 3
+    // probes 0,1,2 go to index 1
+    // probes 3,4 go to index 2
+    //  14 / 3 = 4
+    //  0, 1 ,2
+    //  4, 5 -
+    uint8_t send_i = 0;
+    for (; send_i < 16; send_i++) {
+        uint8_t ttl = send_i / MAX_PROBES; // TTL 1 will be stored at index 0, Im sure this wont be confusing at all ...
+        uint8_t probe_index = send_i % MAX_PROBES;
+        update_socket(&ctx, ttl + 1);
+        update_packet(&packet, ttl, probe_index);
+        send_packet(&packet, &ctx);
+        clock_gettime(CLOCK_REALTIME, &ctx.probes[ttl][probe_index].sent_at);
     }
 
+    struct probe_index oldest_i = {0};
+
+    struct pollfd fd;
+    fd.events = POLLIN;
+    fd.fd = ctx.sock;
+
+    // In theory this loop doesnt actually give a single shit about where we are at in an index.
+    // when It sees a response, its update the big struct, then decides to send a new one.
+    while (true) {
+        int err = poll(&fd, 1, 1000);
+        if (err < 0) {
+            printf("traceroute: poll error\n");
+            cleanup(&ctx);
+            return EXIT_FAILURE;
+        }
+        // Logic is, I dont wanna lose any time responding to actual responses.
+        if (fd.revents & POLLIN) {
+            handle_reply(&ctx);
+            if (ctx.probes[oldest_i.ttl][oldest_i.probe].status == RESPONDED) {
+                // printf("We overwrote the oldest probe oh no\n");
+            }
+        } else {
+            uint8_t available_probe_slots = timeout_outdated_probes(&ctx, &oldest_i);
+            for (uint8_t i = 0; i < available_probe_slots; i++) {
+                uint8_t ttl = send_i / MAX_PROBES;
+                uint8_t probe_index = send_i % MAX_PROBES;
+                update_socket(&ctx, ttl + 1);
+                update_packet(&packet, ttl, probe_index);
+                send_packet(&packet, &ctx);
+                clock_gettime(CLOCK_REALTIME, &ctx.probes[ttl][probe_index].sent_at);
+                send_i += 1;
+            }
+        }
+
+        // Now I need to send as many probes as were timeouted.
+    }
+
+    // In theory we never get here
     cleanup(&ctx);
     return EXIT_FAILURE; // This is actually a failure if we get here.
 }

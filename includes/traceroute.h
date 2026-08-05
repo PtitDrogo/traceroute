@@ -5,11 +5,11 @@
 #include <stdio.h>
 
 #include <netdb.h>
+#include <netinet/ip_icmp.h>
+#include <poll.h>
 #include <stdint.h>
 #include <time.h>
 #include <unistd.h>
-
-#include <netinet/ip_icmp.h>
 
 #include <errno.h>
 #include <stdbool.h>
@@ -20,8 +20,8 @@
 // Since ICMP Header is 8 bytes, 56 is standard so that its 64 total
 #define PAYLOAD_SIZE 56
 #define DEFAULT_TTL 30
-#define MAX_TTL 255
-#define MAX_PROBES 10
+#define MAX_TTL 30
+#define MAX_PROBES 3
 
 #define HELP_STRING                                                                                                    \
     "Usage\n"                                                                                                          \
@@ -41,7 +41,7 @@ struct response_data {
     char resolved_address[NI_MAXHOST];
 };
 
-typedef enum { SENT, RESPONDED, TIMEOUT } probe_status;
+typedef enum { PENDING, RESPONDED, TIMEOUT } probe_status;
 
 struct probe_record {
     struct timespec sent_at;
@@ -50,6 +50,11 @@ struct probe_record {
 
 struct options {
     uint8_t max_ttl;
+};
+
+struct probe_index {
+    uint8_t ttl;
+    uint8_t probe;
 };
 
 struct ping_context {
@@ -92,7 +97,9 @@ void restore_termios(void);
 // print
 void print_start_string(struct ping_context ctx);
 
-//probe
+// probe
 struct timespec get_probe_time(struct probe_record probes[MAX_TTL][MAX_PROBES], uint16_t seq);
+uint8_t timeout_outdated_probes(struct ping_context *ctx, struct probe_index *oldest_i);
+struct probe_index get_probe_index_from_sequence(uint16_t seq);
 
 #endif
