@@ -41,10 +41,11 @@ struct response_data {
     char resolved_address[NI_MAXHOST];
 };
 
+typedef enum { SENT, RESPONDED, TIMEOUT } probe_status;
+
 struct probe_record {
     struct timespec sent_at;
-    int ttl;
-    bool replied;
+    probe_status status;
 };
 
 struct options {
