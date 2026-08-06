@@ -33,8 +33,8 @@ int main(int argc, char *argv[]) {
     print_start_string(&ctx);
     uint8_t send_i = 0;
     for (; send_i < 16; send_i++) {
-        uint8_t ttl = send_i / MAX_PROBES; // TTL 1 will be stored at index 0, Im sure this wont be confusing at all ...
-        uint8_t probe_index = send_i % MAX_PROBES;
+        uint8_t ttl = send_i / ctx.options.max_probes; // TTL 1 will be stored at index 0, Im sure this wont be confusing at all ...
+        uint8_t probe_index = send_i % ctx.options.max_probes;
         update_socket(&ctx, ttl + 1);
         update_packet(&packet, ttl, probe_index);
         send_packet(&packet, &ctx);
@@ -60,8 +60,8 @@ int main(int argc, char *argv[]) {
         uint8_t available_probe_slots = handle_responded_probes(&ctx, &oldest_i);
         for (uint8_t i = 0; i < available_probe_slots; i++) {
             // printf("sending, send_i = %d\n", send_i);
-            uint8_t ttl = send_i / MAX_PROBES;
-            uint8_t probe_index = send_i % MAX_PROBES;
+            uint8_t ttl = send_i / ctx.options.max_probes;
+            uint8_t probe_index = send_i % ctx.options.max_probes;
             update_socket(&ctx, ttl + 1);
             update_packet(&packet, ttl, probe_index);
             send_packet(&packet, &ctx);
@@ -79,4 +79,5 @@ int main(int argc, char *argv[]) {
 
 static void init(ping_context_t *ctx) {
     ctx->final_ttl = DEFAULT_TTL;
+    ctx->options.max_probes = DEFAULT_PROBE;
 } // This wont even proc here, it will be handled during the parsing of the arguments D:

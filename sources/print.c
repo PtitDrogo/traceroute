@@ -10,8 +10,7 @@ void print_ttl_group(ping_context_t *ctx) {
     char *curr_addrr = "";
 
     printf("%d ", ctx->curr_ttl_to_print + 1);
-    for (uint8_t i = 0; i < MAX_PROBES; i++) {
-
+    for (uint8_t i = 0; i < ctx->options.max_probes; i++) {
         probe_record_t cur = ctx->probes[ctx->curr_ttl_to_print][i];
         if (strcmp(cur.resolved_address, "* ") == 0) {
             printf("* ");
@@ -27,7 +26,7 @@ void print_ttl_group(ping_context_t *ctx) {
 }
 
 bool is_ttl_group_ready(const ping_context_t *ctx) {
-    for (uint8_t i = 0; i < MAX_PROBES; i++) {
+    for (uint8_t i = 0; i < ctx->options.max_probes; i++) {
         if (ctx->probes[ctx->curr_ttl_to_print][i].status == PENDING)
             return false;
     }

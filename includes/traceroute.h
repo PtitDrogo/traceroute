@@ -20,8 +20,9 @@
 // Since ICMP Header is 8 bytes, 56 is standard so that its 64 total
 #define PAYLOAD_SIZE 56
 #define DEFAULT_TTL 30
+#define DEFAULT_PROBE 3
 #define MAX_TTL UINT8_MAX
-#define MAX_PROBES 3
+#define MAX_PROBES 10
 
 #define HELP_STRING                                                                                                    \
     "Usage\n"                                                                                                          \
