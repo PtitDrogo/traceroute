@@ -37,16 +37,17 @@ struct ping_packet {
 };
 
 struct response_data {
-    struct timespec start_time; // WIll have to get rid of this
     char resolved_address[NI_MAXHOST];
 };
 
 typedef enum { PENDING, RESPONDED, TIMEOUT } probe_status;
 
-struct probe_record {
+typedef struct probe_record_s {
     struct timespec sent_at;
     probe_status status;
-};
+    char resolved_address[NI_MAXHOST]; // This is either IP or hostname ! I think ...
+    double time_rtt;
+} probe_record;
 
 struct options {
     uint8_t max_ttl;
@@ -58,7 +59,9 @@ struct probe_index {
 };
 
 struct ping_context {
-    struct probe_record probes[MAX_TTL][MAX_PROBES];
+    probe_record probes[MAX_TTL][MAX_PROBES];
+    uint8_t curr_ttl_to_print;
+    uint8_t final_ttl; // This has to be INIT at MAX_TTL, then only lowered.
 
     struct response_data res;
     struct options options;
@@ -95,11 +98,12 @@ void disable_echoctl(void);
 void restore_termios(void);
 
 // print
-void print_start_string(struct ping_context ctx);
+void print_start_string(const struct ping_context *ctx);
+void print_ready_ttl_groups(struct ping_context *ctx);
 
 // probe
-struct timespec get_probe_time(struct probe_record probes[MAX_TTL][MAX_PROBES], uint16_t seq);
-uint8_t timeout_outdated_probes(struct ping_context *ctx, struct probe_index *oldest_i);
+struct timespec get_probe_time(probe_record probes[MAX_TTL][MAX_PROBES], uint16_t seq);
+uint8_t handle_responded_probes(struct ping_context *ctx, struct probe_index *oldest_i);
 struct probe_index get_probe_index_from_sequence(uint16_t seq);
 
 #endif

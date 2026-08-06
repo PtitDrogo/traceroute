@@ -23,65 +23,23 @@ void handle_reply(struct ping_context *ctx) {
 
     uint16_t seq = ntohs(reply->header.un.echo.sequence);
     struct probe_index probe_idx = get_probe_index_from_sequence(seq);
-    struct probe_record *probe = &ctx->probes[probe_idx.ttl][probe_idx.probe];
+    probe_record *probe = &ctx->probes[probe_idx.ttl][probe_idx.probe];
     if (probe->status == TIMEOUT)
         return; // This is a ping that we got too late, we ignore it !
 
     if (outer_icmp->type == ICMP_ECHOREPLY && ntohs(reply->header.un.echo.id) == (uint16_t)getpid()) {
-        double time_rtt = compute_time_difference(*(struct timespec *)reply->payload);
-
-        // Check if one of the probes in our probe group already printed the thing.
-        bool did_print = false;
-        bool all_done = true;
-        // we figure out if we already printed, and if everything is done
-        for (int i = 0; i < MAX_PROBES; i++) {
-            if (ctx->probes[probe_idx.ttl][i].status == RESPONDED) {
-                did_print = true;
-            }
-            if (probe_idx.probe != i && ctx->probes[probe_idx.ttl][i].status == PENDING) {
-                all_done = false;
-            }
+        probe->time_rtt = compute_time_difference(*(struct timespec *)reply->payload);
+        if (ctx->final_ttl == UINT8_MAX) {
+            ctx->final_ttl = probe_idx.ttl;
+            printf("Setting end reply to %d!\n", ctx->final_ttl);
         }
-        if (did_print) {
-            printf("%f ms ", time_rtt);
-        } else {
-            printf("%s %f ms ", ctx->res.resolved_address, time_rtt);
-        }
-
-        if (all_done) {
-            printf("\n");
-            cleanup(ctx);
-            exit(EXIT_SUCCESS);
-        }
-
     } else if (outer_icmp->type == ICMP_TIME_EXCEEDED) {
-        double time_rtt = compute_time_difference(get_probe_time(ctx->probes, seq));
-        // Check if one of the probes in our probe group already printed the thing.
-        bool did_print = false;
-        bool all_done = true;
-        // we figure out if we already printed, and if everything is done
-        for (int i = 0; i < MAX_PROBES; i++) {
-            if (ctx->probes[probe_idx.ttl][i].status == RESPONDED) {
-                did_print = true;
-            }
-            if (probe_idx.probe != i && ctx->probes[probe_idx.ttl][i].status == PENDING) {
-                all_done = false;
-            }
-        }
-        if (did_print) {
-            printf("%f ms ", time_rtt);
-        } else {
-            printf("%s %f ms ", ctx->res.resolved_address, time_rtt);
-        }
-
-        if (all_done) {
-            printf("\n");
-        }
-    } else {
-        printf("Error, Didnt get expected packet\n");
+        probe->time_rtt = compute_time_difference(get_probe_time(ctx->probes, seq));
     }
+    strlcpy(probe->resolved_address, ctx->res.resolved_address, sizeof(probe->resolved_address));
+
+    // This can probe and and will often be the oldest probe, but that should be handled in the timeout function.
     probe->status = RESPONDED;
-    // BUT WHAT IF THAT GUY WAS THE OLDEST PROBE GOD DAMNIT I gotta update the new oldest probe.
     return;
 }
 
