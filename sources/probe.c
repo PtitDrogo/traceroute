@@ -1,27 +1,27 @@
 #include "../includes/traceroute.h"
 
-void init_probes(probe_record probes) { (void)probes; }
+void init_probes(probe_record_t probes) { (void)probes; }
 
-struct probe_index get_probe_index_from_sequence(uint16_t seq) {
-    struct probe_index idx = {0};
+probe_index_t get_probe_index_from_sequence(uint16_t seq) {
+    probe_index_t idx = {0};
     idx.ttl = seq / 10;
     idx.probe = seq % 10;
     return idx;
 }
 
-struct timespec get_probe_time(probe_record probes[MAX_TTL][MAX_PROBES], uint16_t seq) {
-    struct probe_index idx = get_probe_index_from_sequence(seq);
+struct timespec get_probe_time(probe_record_t probes[MAX_TTL][MAX_PROBES], uint16_t seq) {
+    probe_index_t idx = get_probe_index_from_sequence(seq);
     return probes[idx.ttl][idx.probe].sent_at;
 }
 
 // Return the index of the first next instance of pending probe
 // if the probe you give it is the oldest, it will just return that.
 // Increases count by one for every row walked.
-struct probe_index find_next_oldest_probe_index(struct probe_index cur, probe_record probes[MAX_TTL][MAX_PROBES],
-                                                uint8_t *count) {
-    struct probe_index res;
+probe_index_t find_next_oldest_probe_index(probe_index_t cur, probe_record_t probes[MAX_TTL][MAX_PROBES],
+                                           uint8_t *count, uint8_t max_ttl) {
+    probe_index_t res;
 
-    for (uint8_t ttl = cur.ttl; ttl < MAX_TTL; ttl++) {
+    for (uint8_t ttl = cur.ttl; ttl < max_ttl; ttl++) {
         for (uint8_t probe = cur.probe; probe < MAX_PROBES; probe++) {
             if (probes[ttl][probe].status == PENDING) {
                 res.ttl = ttl;
@@ -33,18 +33,17 @@ struct probe_index find_next_oldest_probe_index(struct probe_index cur, probe_re
         cur.probe = 0;
     }
     res.probe = MAX_PROBES;
-    res.ttl = MAX_TTL;
+    res.ttl = max_ttl;
     return res;
 };
 
-
-uint8_t handle_responded_probes(struct ping_context *ctx, struct probe_index *oldest_i) {
+uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i) {
     uint8_t responded_probes = 0;
-    struct probe_index idx = find_next_oldest_probe_index(*oldest_i, ctx->probes, &responded_probes);
+    probe_index_t idx = find_next_oldest_probe_index(*oldest_i, ctx->probes, &responded_probes, ctx->final_ttl);
 
     oldest_i->probe = idx.probe;
     oldest_i->ttl = idx.ttl;
-    probe_record *oldest_probe = &ctx->probes[idx.ttl][idx.probe];
+    probe_record_t *oldest_probe = &ctx->probes[idx.ttl][idx.probe];
 
     double time_since_sent_ms = compute_time_difference(oldest_probe->sent_at);
 

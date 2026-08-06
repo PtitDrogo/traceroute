@@ -1,6 +1,6 @@
 #include "../includes/traceroute.h"
 
-void create_socket(struct options options, struct ping_context *ctx) {
+void create_socket(options_t options, ping_context_t *ctx) {
     // For now were using ICMP, but later the protocol will be a variable.
     (void)options;
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
@@ -10,7 +10,7 @@ void create_socket(struct options options, struct ping_context *ctx) {
     return;
 }
 
-void update_socket(struct ping_context *ctx, uint8_t ttl) {
+void update_socket(ping_context_t *ctx, uint8_t ttl) {
     if (setsockopt(ctx->sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) < 0) {
         perror("traceroute: setsockopt IP_TTL");
         cleanup(ctx);

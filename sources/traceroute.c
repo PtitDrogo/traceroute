@@ -1,6 +1,6 @@
 #include "../includes/traceroute.h"
 
-static void init(struct ping_context *ctx);
+static void init(ping_context_t *ctx);
 
 int main(int argc, char *argv[]) {
     if (geteuid() != 0) {
@@ -8,9 +8,9 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    struct ping_context ctx = {0};
-    init(&ctx);
+    ping_context_t ctx = {0};
     disable_echoctl();
+    init(&ctx);
     parse_flags(&ctx, argc, argv);
     struct addrinfo hints = {0};
     hints.ai_family = AF_INET;
@@ -23,10 +23,10 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    struct ping_packet packet = {.header.type = ICMP_ECHO,
-                                 .header.code = 0,
-                                 .header.checksum = 0,
-                                 .header.un = {.echo = {.id = htons(getpid()), .sequence = htons(1)}}};
+    ping_packet_t packet = {.header.type = ICMP_ECHO,
+                            .header.code = 0,
+                            .header.checksum = 0,
+                            .header.un = {.echo = {.id = htons(getpid()), .sequence = htons(1)}}};
     build_packet(&packet);
     // clock_gettime(CLOCK_REALTIME, &ctx.res.start_time);
 
@@ -41,14 +41,12 @@ int main(int argc, char *argv[]) {
         clock_gettime(CLOCK_REALTIME, &ctx.probes[ttl][probe_index].sent_at);
     }
 
-    struct probe_index oldest_i = {0};
+    probe_index_t oldest_i = {0};
 
     struct pollfd fd;
     fd.events = POLLIN;
     fd.fd = ctx.sock;
 
-    // In theory this loop doesnt actually give a single shit about where we are at in an index.
-    // when It sees a response, its update the big struct, then decides to send a new one.
     while (true) {
         int err = poll(&fd, 1, 1000);
         if (err < 0) {
@@ -56,13 +54,10 @@ int main(int argc, char *argv[]) {
             cleanup(&ctx);
             return EXIT_FAILURE;
         }
-        // Logic is, I dont wanna lose any time responding to actual responses.
         if (fd.revents & POLLIN) {
             handle_reply(&ctx);
         }
         uint8_t available_probe_slots = handle_responded_probes(&ctx, &oldest_i);
-
-        // Send back the outdated probes.
         for (uint8_t i = 0; i < available_probe_slots; i++) {
             // printf("sending, send_i = %d\n", send_i);
             uint8_t ttl = send_i / MAX_PROBES;
@@ -82,6 +77,6 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE; // This is actually a failure if we get here.
 }
 
-static void init(struct ping_context *ctx) {
-    ctx->final_ttl = UINT8_MAX;
+static void init(ping_context_t *ctx) {
+    ctx->final_ttl = DEFAULT_TTL;
 } // This wont even proc here, it will be handled during the parsing of the arguments D:

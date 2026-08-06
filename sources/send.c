@@ -1,7 +1,7 @@
 
 #include "../includes/traceroute.h"
 
-void send_packet(struct ping_packet *packet, struct ping_context *ctx) {
+void send_packet(ping_packet_t *packet, ping_context_t *ctx) {
     size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
     int err = sendto(ctx->sock, packet, packet_size, 0, ctx->destination_addrinfo->ai_addr,
                      ctx->destination_addrinfo->ai_addrlen);
@@ -39,7 +39,7 @@ double compute_time_difference(struct timespec past_time) {
     return rtt;
 }
 
-void build_packet(struct ping_packet *packet) {
+void build_packet(ping_packet_t *packet) {
     size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
     size_t start_idx = 0;
     clock_gettime(CLOCK_REALTIME, (struct timespec *)packet->payload);
@@ -54,7 +54,7 @@ void build_packet(struct ping_packet *packet) {
     packet->header.checksum = checksum((uint16_t *)packet, packet_size);
 }
 
-void update_packet(struct ping_packet *packet, uint8_t ttl, uint8_t probe_index) {
+void update_packet(ping_packet_t *packet, uint8_t ttl, uint8_t probe_index) {
     size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
     clock_gettime(CLOCK_REALTIME, (struct timespec *)packet->payload);
     packet->header.un.echo.sequence = htons(1);
@@ -63,13 +63,13 @@ void update_packet(struct ping_packet *packet, uint8_t ttl, uint8_t probe_index)
     packet->header.checksum = checksum((uint16_t *)packet, packet_size);
 }
 
-void update_ping_info(double time_rtt, struct ping_context *ctx) {
+void update_ping_info(double time_rtt, ping_context_t *ctx) {
     (void)time_rtt;
     (void)ctx;
     // nothing here ...
 }
 
-void cleanup(struct ping_context *ctx) {
+void cleanup(ping_context_t *ctx) {
     if (ctx->destination_addrinfo)
         freeaddrinfo(ctx->destination_addrinfo);
     if (ctx->sock >= 0)

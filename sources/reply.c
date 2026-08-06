@@ -1,8 +1,8 @@
 #include "../includes/traceroute.h"
 
-static void parse_icmp_reply(char *response, struct icmphdr **outer_icmp, struct ping_packet **reply);
+static void parse_icmp_reply(char *response, struct icmphdr **outer_icmp, ping_packet_t **reply);
 
-void handle_reply(struct ping_context *ctx) {
+void handle_reply(ping_context_t *ctx) {
 
     struct sockaddr_in response_in;
     socklen_t src_len = sizeof(response_in);
@@ -18,18 +18,18 @@ void handle_reply(struct ping_context *ctx) {
     get_hostname_string_from_ip(ip_addr, ctx->res.resolved_address, sizeof(ctx->res.resolved_address));
 
     struct icmphdr *outer_icmp;
-    struct ping_packet *reply;
+    ping_packet_t *reply;
     parse_icmp_reply(response, &outer_icmp, &reply);
 
     uint16_t seq = ntohs(reply->header.un.echo.sequence);
-    struct probe_index probe_idx = get_probe_index_from_sequence(seq);
-    probe_record *probe = &ctx->probes[probe_idx.ttl][probe_idx.probe];
+    probe_index_t probe_idx = get_probe_index_from_sequence(seq);
+    probe_record_t *probe = &ctx->probes[probe_idx.ttl][probe_idx.probe];
     if (probe->status == TIMEOUT)
         return; // This is a ping that we got too late, we ignore it !
 
     if (outer_icmp->type == ICMP_ECHOREPLY && ntohs(reply->header.un.echo.id) == (uint16_t)getpid()) {
         probe->time_rtt = compute_time_difference(*(struct timespec *)reply->payload);
-        if (ctx->final_ttl == UINT8_MAX) {
+        if (probe_idx.ttl < ctx->final_ttl) {
             ctx->final_ttl = probe_idx.ttl;
             printf("Setting end reply to %d!\n", ctx->final_ttl);
         }
@@ -45,7 +45,7 @@ void handle_reply(struct ping_context *ctx) {
 
 //[IP of replier][ICMP header of replier]<PAYLOAD:[IP Header of sender][ICMP Header of sender]>
 //               <- We are here                   <- then here          <- then here, the goal !
-static void parse_icmp_reply(char *response, struct icmphdr **outer_icmp, struct ping_packet **reply) {
+static void parse_icmp_reply(char *response, struct icmphdr **outer_icmp, ping_packet_t **reply) {
     struct iphdr *ip = (struct iphdr *)response;
     int ip_hdr_len = ip->ihl * 4;
     *outer_icmp = (struct icmphdr *)(response + ip_hdr_len);
@@ -53,8 +53,8 @@ static void parse_icmp_reply(char *response, struct icmphdr **outer_icmp, struct
     if ((*outer_icmp)->type == ICMP_TIME_EXCEEDED || (*outer_icmp)->type == ICMP_DEST_UNREACH) {
         struct iphdr *inner_ip = (struct iphdr *)(response + ip_hdr_len + sizeof(struct icmphdr));
         int inner_ip_hdr_len = inner_ip->ihl * 4;
-        *reply = (struct ping_packet *)((char *)inner_ip + inner_ip_hdr_len);
+        *reply = (ping_packet_t *)((char *)inner_ip + inner_ip_hdr_len);
     } else {
-        *reply = (struct ping_packet *)(response + ip_hdr_len);
+        *reply = (ping_packet_t *)(response + ip_hdr_len);
     }
 }

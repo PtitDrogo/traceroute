@@ -1,13 +1,22 @@
 #include "../includes/traceroute.h"
 
-void parse_flags(struct ping_context *ctx, int argc, char *argv[]) {
+//Flags to do
+// -> number of Probes
+// -> The TTL / number of hops
+// -> use UDP / use ICMP (Hard !)
+
+
+void parse_flags(ping_context_t *ctx, int argc, char *argv[]) {
     int32_t opt;
-    const char *optstring = ":hVm:";
+    const char *optstring = ":hVm:q:";
 
     while ((opt = getopt(argc, argv, optstring)) != -1) {
         switch (opt) {
         case 'm':
-            ctx->options.max_ttl = (uint8_t)parse_num(ctx, UINT8_MAX, 'm');
+            ctx->final_ttl = (uint8_t)parse_num(ctx, UINT8_MAX, 'm') - 1;
+            break;
+        case 'q':
+            ctx->options.max_probes = (uint8_t)parse_num(ctx, 10, 'q');
             break;
         case 'h':
             printf(HELP_STRING);
@@ -44,7 +53,7 @@ void parse_flags(struct ping_context *ctx, int argc, char *argv[]) {
     return;
 }
 
-long parse_num(struct ping_context *ctx, uint32_t max_range, char opt_char) {
+long parse_num(ping_context_t *ctx, uint32_t max_range, char opt_char) {
     char *endptr;
     long val = strtol(optarg, &endptr, 10);
     if (*endptr != '\0' || optarg == endptr) {
@@ -52,7 +61,7 @@ long parse_num(struct ping_context *ctx, uint32_t max_range, char opt_char) {
         cleanup(ctx);
         exit(1);
     }
-    if (val < 0 || val > max_range) {
+    if (val <= 0 || val > max_range) {
         fprintf(stderr, "traceroute: invalid -%c value: '%s': out of range: 0 <= value <= %d\n", opt_char, optarg,
                 max_range);
         cleanup(ctx);
