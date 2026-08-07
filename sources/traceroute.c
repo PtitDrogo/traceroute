@@ -59,9 +59,16 @@ int main(int argc, char *argv[]) {
             handle_reply(&ctx);
         }
         uint8_t available_probe_slots = handle_responded_probes(&ctx, &oldest_i);
-        for (uint8_t i = 0; i < available_probe_slots; i++) {
-            icmp_sending_protocol(send_i, &ctx, &icmp_packet);
-            send_i += 1;
+        if (ctx.options.use_icmp) {
+            for (uint8_t i = 0; i < available_probe_slots; i++) {
+                icmp_sending_protocol(send_i, &ctx, &icmp_packet);
+                send_i += 1;
+            }
+        } else {
+            for (uint8_t i = 0; i < available_probe_slots; i++) {
+                udp_sending_protocol(send_i, &ctx, &icmp_packet);
+                send_i += 1;
+            }
         }
 
         print_ready_ttl_groups(&ctx);
