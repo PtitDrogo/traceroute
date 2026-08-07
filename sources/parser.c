@@ -1,22 +1,27 @@
 #include "../includes/traceroute.h"
 
-//Flags to do
-// -> number of Probes
-// -> The TTL / number of hops
-// -> use UDP / use ICMP (Hard !)
-
+// Flags to do
+//  -> number of Probes
+//  -> The TTL / number of hops
+//  -> use UDP / use ICMP (Hard !)
 
 void parse_flags(ping_context_t *ctx, int argc, char *argv[]) {
     int32_t opt;
-    const char *optstring = ":hVm:q:";
+    const char *optstring = ":hVm:q:IN:";
 
     while ((opt = getopt(argc, argv, optstring)) != -1) {
         switch (opt) {
+        case 'N':
+            ctx->options.max_probes_in_flight = (uint32_t)parse_num(ctx, INT32_MAX, 'N');
+            break;
+        case 'I':
+            ctx->options.use_icmp = true;
+            break;
         case 'm':
             ctx->final_ttl = (uint8_t)parse_num(ctx, UINT8_MAX, 'm') - 1;
             break;
         case 'q':
-            ctx->options.max_probes = (uint8_t)parse_num(ctx, 10, 'q');
+            ctx->options.max_probes_per_ttl = (uint8_t)parse_num(ctx, 10, 'q');
             break;
         case 'h':
             printf(HELP_STRING);
@@ -50,6 +55,8 @@ void parse_flags(ping_context_t *ctx, int argc, char *argv[]) {
     }
 
     ctx->arg_address = argv[optind];
+    uint32_t max_theorical_probes = ctx->final_ttl * ctx->options.max_probes_per_ttl;
+    ctx->options.max_probes_in_flight = (uint32_t) fmin(ctx->options.max_probes_in_flight, fmin(max_theorical_probes, 255));
     return;
 }
 

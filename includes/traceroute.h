@@ -6,10 +6,12 @@
 
 #include <netdb.h>
 #include <netinet/ip_icmp.h>
+#include <netinet/udp.h>
 #include <poll.h>
 #include <stdint.h>
 #include <time.h>
 #include <unistd.h>
+#include <math.h>
 
 #include <errno.h>
 #include <stdbool.h>
@@ -18,11 +20,13 @@
 #include <termios.h>
 
 // Since ICMP Header is 8 bytes, 56 is standard so that its 64 total
+#define BASE_UDP_PORT 33434
 #define PAYLOAD_SIZE 56
 #define DEFAULT_TTL 30
 #define DEFAULT_PROBE 3
 #define MAX_TTL UINT8_MAX
 #define MAX_PROBES 10
+#define DEFAULT_IN_FLIGHT_PROBES 16
 
 #define HELP_STRING                                                                                                    \
     "Usage\n"                                                                                                          \
@@ -35,7 +39,12 @@
 typedef struct {
     struct icmphdr header;
     char payload[UINT16_MAX];
-} ping_packet_t;
+} icmp_packet_t;
+
+typedef struct {
+    struct udphdr header;
+    char payload[UINT16_MAX];
+} udp_packet_t;
 
 typedef struct {
     char resolved_address[NI_MAXHOST];
@@ -51,7 +60,9 @@ typedef struct {
 } probe_record_t;
 
 typedef struct {
-    uint8_t max_probes;
+    uint8_t max_probes_per_ttl;
+    uint32_t max_probes_in_flight;
+    bool use_icmp;
 } options_t;
 
 typedef struct {
@@ -68,25 +79,27 @@ typedef struct {
     // Basic start data
     char *arg_address;
     struct addrinfo *destination_addrinfo;
-    int sock;
+    int send_sock;
+    int recv_sock;
 } ping_context_t;
 
 // send
-void send_packet(ping_packet_t *packet, ping_context_t *ctx);
-void build_packet(ping_packet_t *packet);
-void update_packet(ping_packet_t *packet, uint8_t ttl, uint8_t probe_index);
-void create_socket(options_t options, ping_context_t *ctx);
+void send_icmp_packet(icmp_packet_t *packet, ping_context_t *ctx);
+void build_packet(icmp_packet_t *packet);
+void update_icmp_packet(icmp_packet_t *packet, uint8_t ttl, uint8_t probe_index);
+void create_socket(ping_context_t *ctx);
 void update_socket(ping_context_t *ctx, uint8_t ttl);
+void icmp_sending_protocol(uint8_t send_i, ping_context_t *ctx, icmp_packet_t *packet);
 uint16_t checksum(const uint16_t *data, size_t size);
 
 // reply
-void update_ping_info(double time_rtt, ping_context_t *ctx);
 void handle_reply(ping_context_t *ctx);
 
 // helpers
 void cleanup(ping_context_t *ctx);
 void get_hostname_string_from_ip(const char *ip_str, char *dest_buf, size_t buf_len);
 double compute_time_difference(const struct timespec past_time);
+size_t ft_strlcpy(char *dst, const char *src, size_t dsize);
 
 // parsing
 void parse_flags(ping_context_t *ctx, int argc, char *argv[]);

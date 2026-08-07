@@ -19,6 +19,7 @@ SRCS =		$(SRCS_DIR)/traceroute.c \
 			$(SRCS_DIR)/reply.c \
 			$(SRCS_DIR)/print.c \
 			$(SRCS_DIR)/probe.c \
+			$(SRCS_DIR)/helpers.c \
 
 			
 			
