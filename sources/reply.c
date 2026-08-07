@@ -19,7 +19,11 @@ void handle_reply(ping_context_t *ctx) {
 
     struct icmphdr *outer_icmp;
     icmp_packet_t *reply;
-    parse_icmp_reply(response, &outer_icmp, &reply);
+    if (ctx->options.use_icmp) {
+        parse_icmp_reply(response, &outer_icmp, &reply);
+    } else {
+        
+    }
 
     uint16_t seq = ntohs(reply->header.un.echo.sequence);
     probe_index_t probe_idx = get_probe_index_from_sequence(seq);

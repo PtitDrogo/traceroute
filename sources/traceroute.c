@@ -23,16 +23,23 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    icmp_packet_t packet = {.header.type = ICMP_ECHO,
+    icmp_packet_t icmp_packet = {.header.type = ICMP_ECHO,
                             .header.code = 0,
                             .header.checksum = 0,
                             .header.un = {.echo = {.id = htons(getpid()), .sequence = htons(1)}}};
-    build_packet(&packet);
+    build_packet(&icmp_packet);
+    udp_packet_t udp_packet;
 
     print_start_string(&ctx);
     uint32_t send_i = 0;
-    for (; send_i < ctx.options.max_probes_in_flight; send_i++) {
-        icmp_sending_protocol(send_i, &ctx, &packet);
+    if (ctx.options.use_icmp) {
+        for (; send_i < ctx.options.max_probes_in_flight; send_i++) {
+            icmp_sending_protocol(send_i, &ctx, &icmp_packet);
+        }
+    } else {
+        for (; send_i < ctx.options.max_probes_in_flight; send_i++) {
+           udp_sending_protocol(send_i, &ctx, &udp_packet);
+        }
     }
 
     probe_index_t oldest_i = {0};
@@ -53,12 +60,7 @@ int main(int argc, char *argv[]) {
         }
         uint8_t available_probe_slots = handle_responded_probes(&ctx, &oldest_i);
         for (uint8_t i = 0; i < available_probe_slots; i++) {
-            uint8_t ttl = send_i / ctx.options.max_probes_per_ttl;
-            uint8_t probe_index = send_i % ctx.options.max_probes_per_ttl;
-            update_socket(&ctx, ttl + 1);
-            update_icmp_packet(&packet, ttl, probe_index);
-            send_icmp_packet(&packet, &ctx);
-            clock_gettime(CLOCK_REALTIME, &ctx.probes[ttl][probe_index].sent_at);
+            icmp_sending_protocol(send_i, &ctx, &icmp_packet);
             send_i += 1;
         }
 

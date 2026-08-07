@@ -1,15 +1,6 @@
 
 #include "../includes/traceroute.h"
 
-void icmp_sending_protocol(uint8_t send_i, ping_context_t *ctx, icmp_packet_t *packet) {
-    uint8_t ttl = send_i / ctx->options.max_probes_per_ttl;
-    uint8_t probe_index = send_i % ctx->options.max_probes_per_ttl;
-    update_socket(ctx, ttl + 1);
-    update_icmp_packet(packet, ttl, probe_index);
-    send_icmp_packet(packet, ctx);
-    clock_gettime(CLOCK_REALTIME, &ctx->probes[ttl][probe_index].sent_at);
-}
-
 void send_icmp_packet(icmp_packet_t *packet, ping_context_t *ctx) {
     size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
     int err = sendto(ctx->send_sock, packet, packet_size, 0, ctx->destination_addrinfo->ai_addr,
@@ -21,9 +12,9 @@ void send_icmp_packet(icmp_packet_t *packet, ping_context_t *ctx) {
     }
 }
 
-void send_udp_packet(udp_packet_t *packet, ping_context_t *ctx) {
-    size_t packet_size = sizeof(struct udphdr) + PAYLOAD_SIZE;
-    int err = sendto(ctx->send_sock, packet, packet_size, 0, ctx->destination_addrinfo->ai_addr,
+void send_udp_packet(char *payload, ping_context_t *ctx) {
+    size_t payload_size = PAYLOAD_SIZE;
+    int err = sendto(ctx->send_sock, payload, payload_size, 0, ctx->destination_addrinfo->ai_addr,
                      ctx->destination_addrinfo->ai_addrlen);
     if (err == -1) {
         fprintf(stderr, "ping: sendto: %s\n", strerror(errno));
@@ -98,4 +89,22 @@ void cleanup(ping_context_t *ctx) {
     if (ctx->recv_sock >= 0)
         close(ctx->recv_sock);
     restore_termios();
+}
+
+void icmp_sending_protocol(uint8_t send_i, ping_context_t *ctx, icmp_packet_t *packet) {
+    uint8_t ttl = send_i / ctx->options.max_probes_per_ttl;
+    uint8_t probe_index = send_i % ctx->options.max_probes_per_ttl;
+    update_socket(ctx, ttl + 1);
+    update_icmp_packet(packet, ttl, probe_index);
+    send_icmp_packet(packet, ctx);
+    clock_gettime(CLOCK_REALTIME, &ctx->probes[ttl][probe_index].sent_at);
+}
+
+void udp_sending_protocol(uint8_t send_i, ping_context_t *ctx, udp_packet_t *packet) {
+    uint8_t ttl = send_i / ctx->options.max_probes_per_ttl;
+    uint8_t probe_index = send_i % ctx->options.max_probes_per_ttl;
+    update_socket(ctx, ttl + 1);
+    update_udp_packet(packet->payload, (struct sockaddr_in *)ctx->destination_addrinfo->ai_addr, ttl, probe_index);
+    send_udp_packet(packet->payload, ctx);
+    clock_gettime(CLOCK_REALTIME, &ctx->probes[ttl][probe_index].sent_at);
 }

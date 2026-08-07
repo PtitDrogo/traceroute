@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <stdio.h>
 
+#include <math.h>
 #include <netdb.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/udp.h>
@@ -11,7 +12,6 @@
 #include <stdint.h>
 #include <time.h>
 #include <unistd.h>
-#include <math.h>
 
 #include <errno.h>
 #include <stdbool.h>
@@ -73,7 +73,7 @@ typedef struct {
 typedef struct {
     probe_record_t probes[MAX_TTL][MAX_PROBES];
     uint8_t curr_ttl_to_print;
-    uint8_t final_ttl; // This has to be INIT at MAX_TTL, then only lowered.
+    uint8_t final_ttl;
     response_data_t res;
     options_t options;
     // Basic start data
@@ -90,6 +90,7 @@ void update_icmp_packet(icmp_packet_t *packet, uint8_t ttl, uint8_t probe_index)
 void create_socket(ping_context_t *ctx);
 void update_socket(ping_context_t *ctx, uint8_t ttl);
 void icmp_sending_protocol(uint8_t send_i, ping_context_t *ctx, icmp_packet_t *packet);
+void udp_sending_protocol(uint8_t send_i, ping_context_t *ctx, udp_packet_t *packet);
 uint16_t checksum(const uint16_t *data, size_t size);
 
 // reply

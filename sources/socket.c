@@ -11,12 +11,14 @@ void create_socket(ping_context_t *ctx) {
         ctx->send_sock = sock;
         return;
     }
+    printf("Creating udp socket\n");
     int udp_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     ctx->send_sock = udp_sock;
     return;
 }
 
 void update_socket(ping_context_t *ctx, uint8_t ttl) {
+    printf("Send sock: %d\n", ctx->send_sock);
     if (setsockopt(ctx->send_sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) < 0) {
         perror("traceroute: setsockopt IP_TTL");
         cleanup(ctx);
