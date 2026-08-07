@@ -18,7 +18,6 @@ void create_socket(ping_context_t *ctx) {
 }
 
 void update_socket(ping_context_t *ctx, uint8_t ttl) {
-    printf("Send sock: %d\n", ctx->send_sock);
     if (setsockopt(ctx->send_sock, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl)) < 0) {
         perror("traceroute: setsockopt IP_TTL");
         cleanup(ctx);

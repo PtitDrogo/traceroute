@@ -21,12 +21,12 @@ void handle_reply(ping_context_t *ctx) {
     icmp_packet_t *reply;
 
     //We dont actually
-    struct udphdr *outer_udp;
-    udp_packet_t *reply_udp;
+    // struct udphdr *outer_udp;
+    // udp_packet_t *reply_udp;
     if (ctx->options.use_icmp) {
         parse_icmp_reply(response, &outer_icmp, &reply);
     } else {
-       parse_udp_reply(response, &outer_udp, &reply_udp); 
+    //    parse_udp_reply(response, &outer_udp, &reply_udp); 
     }
 
     uint16_t seq = ntohs(reply->header.un.echo.sequence);

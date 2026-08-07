@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
             }
         } else {
             for (uint8_t i = 0; i < available_probe_slots; i++) {
-                udp_sending_protocol(send_i, &ctx, &icmp_packet);
+                udp_sending_protocol(send_i, &ctx, &udp_packet);
                 send_i += 1;
             }
         }
