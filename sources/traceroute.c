@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
                                  .header.checksum = 0,
                                  .header.un = {.echo = {.id = htons(getpid()), .sequence = htons(1)}}};
     build_packet(&icmp_packet);
-    char *udp_payload = NULL;
+    char *udp_payload[UINT16_MAX];
 
     print_start_string(&ctx);
     uint32_t send_i = 0;
@@ -53,6 +53,7 @@ int main(int argc, char *argv[]) {
         uint8_t available_probe_slots = handle_responded_probes(&ctx, &oldest_i);
         for (; send_i < available_probe_slots; send_i++) {
             send_protocol(send_i, &ctx, packet);
+            send_i++;
         }
 
         print_ready_ttl_groups(&ctx);
