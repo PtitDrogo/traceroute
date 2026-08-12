@@ -1,16 +1,13 @@
 #include "../includes/traceroute.h"
 
-static void init(ping_context_t *ctx);
+static ping_context_t init();
 
 int main(int argc, char *argv[]) {
     if (geteuid() != 0) {
         printf("ping: sudo rights are required, exiting.\n");
         return EXIT_FAILURE;
     }
-
-    ping_context_t ctx = {0};
-    disable_echoctl();
-    init(&ctx);
+    ping_context_t ctx = init();
     parse_flags(&ctx, argc, argv);
     struct addrinfo hints = {0};
     hints.ai_family = AF_INET;
@@ -24,22 +21,17 @@ int main(int argc, char *argv[]) {
     }
 
     icmp_packet_t icmp_packet = {.header.type = ICMP_ECHO,
-                            .header.code = 0,
-                            .header.checksum = 0,
-                            .header.un = {.echo = {.id = htons(getpid()), .sequence = htons(1)}}};
+                                 .header.code = 0,
+                                 .header.checksum = 0,
+                                 .header.un = {.echo = {.id = htons(getpid()), .sequence = htons(1)}}};
     build_packet(&icmp_packet);
-    udp_packet_t udp_packet;
+    char *udp_payload = NULL;
 
     print_start_string(&ctx);
     uint32_t send_i = 0;
-    if (ctx.options.use_icmp) {
-        for (; send_i < ctx.options.max_probes_in_flight; send_i++) {
-            icmp_sending_protocol(send_i, &ctx, &icmp_packet);
-        }
-    } else {
-        for (; send_i < ctx.options.max_probes_in_flight; send_i++) {
-           udp_sending_protocol(send_i, &ctx, &udp_packet);
-        }
+    void *packet = ctx.options.use_icmp ? (void *)&icmp_packet : (void *)&udp_payload;
+    for (; send_i < ctx.options.max_probes_in_flight; send_i++) {
+        send_protocol(send_i, &ctx, packet);
     }
 
     probe_index_t oldest_i = {0};
@@ -59,16 +51,8 @@ int main(int argc, char *argv[]) {
             handle_reply(&ctx);
         }
         uint8_t available_probe_slots = handle_responded_probes(&ctx, &oldest_i);
-        if (ctx.options.use_icmp) {
-            for (uint8_t i = 0; i < available_probe_slots; i++) {
-                icmp_sending_protocol(send_i, &ctx, &icmp_packet);
-                send_i += 1;
-            }
-        } else {
-            for (uint8_t i = 0; i < available_probe_slots; i++) {
-                udp_sending_protocol(send_i, &ctx, &udp_packet);
-                send_i += 1;
-            }
+        for (; send_i < available_probe_slots; send_i++) {
+            send_protocol(send_i, &ctx, packet);
         }
 
         print_ready_ttl_groups(&ctx);
@@ -79,8 +63,11 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE; // This is actually a failure if we get here.
 }
 
-static void init(ping_context_t *ctx) {
-    ctx->final_ttl = DEFAULT_TTL;
-    ctx->options.max_probes_per_ttl = DEFAULT_PROBE;
-    ctx->options.max_probes_in_flight = DEFAULT_IN_FLIGHT_PROBES;
-} // This wont even proc here, it will be handled during the parsing of the arguments D:
+static ping_context_t init() {
+    disable_echoctl();
+    ping_context_t ctx = {0};
+    ctx.final_ttl = DEFAULT_TTL;
+    ctx.options.max_probes_per_ttl = DEFAULT_PROBE;
+    ctx.options.max_probes_in_flight = DEFAULT_IN_FLIGHT_PROBES;
+    return ctx;
+}

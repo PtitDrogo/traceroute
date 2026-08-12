@@ -84,14 +84,14 @@ typedef struct {
 } ping_context_t;
 
 // send
-void send_icmp_packet(icmp_packet_t *packet, ping_context_t *ctx);
 void build_packet(icmp_packet_t *packet);
-void update_icmp_packet(icmp_packet_t *packet, uint8_t ttl, uint8_t probe_index);
 void create_socket(ping_context_t *ctx);
 void update_socket(ping_context_t *ctx, uint8_t ttl);
-void icmp_sending_protocol(uint8_t send_i, ping_context_t *ctx, icmp_packet_t *packet);
-void udp_sending_protocol(uint8_t send_i, ping_context_t *ctx, udp_packet_t *packet);
 uint16_t checksum(const uint16_t *data, size_t size);
+
+void update_packet(void *packet, probe_index_t index, ping_context_t *ctx);
+void send_packet(void *packet, ping_context_t *ctx);
+void send_protocol(uint8_t send_i, ping_context_t *ctx, void *packet);
 
 // reply
 void handle_reply(ping_context_t *ctx);
@@ -118,5 +118,6 @@ void print_ready_ttl_groups(ping_context_t *ctx);
 struct timespec get_probe_time(probe_record_t probes[MAX_TTL][MAX_PROBES], uint16_t seq);
 uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i);
 probe_index_t get_probe_index_from_sequence(uint16_t seq);
+probe_index_t get_probe_index_from_port(uint16_t port);
 
 #endif

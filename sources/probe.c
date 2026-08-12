@@ -9,6 +9,14 @@ probe_index_t get_probe_index_from_sequence(uint16_t seq) {
     return idx;
 }
 
+probe_index_t get_probe_index_from_port(uint16_t port) {
+    probe_index_t idx = {0};
+    
+    idx.ttl = (port - BASE_UDP_PORT) / 10;
+    idx.probe = (port - BASE_UDP_PORT) % 10;
+    return idx;
+}
+
 struct timespec get_probe_time(probe_record_t probes[MAX_TTL][MAX_PROBES], uint16_t seq) {
     probe_index_t idx = get_probe_index_from_sequence(seq);
     return probes[idx.ttl][idx.probe].sent_at;

@@ -1,27 +1,27 @@
 
 #include "../includes/traceroute.h"
 
-void send_icmp_packet(icmp_packet_t *packet, ping_context_t *ctx) {
-    size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
-    int err = sendto(ctx->send_sock, packet, packet_size, 0, ctx->destination_addrinfo->ai_addr,
-                     ctx->destination_addrinfo->ai_addrlen);
-    if (err == -1) {
-        fprintf(stderr, "ping: sendto: %s\n", strerror(errno));
-        cleanup(ctx);
-        exit(1);
-    }
-}
+// void send_icmp_packet(icmp_packet_t *packet, ping_context_t *ctx) {
+//     size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
+//     int err = sendto(ctx->send_sock, packet, packet_size, 0, ctx->destination_addrinfo->ai_addr,
+//                      ctx->destination_addrinfo->ai_addrlen);
+//     if (err == -1) {
+//         fprintf(stderr, "ping: sendto: %s\n", strerror(errno));
+//         cleanup(ctx);
+//         exit(1);
+//     }
+// }
 
-void send_udp_packet(char *payload, ping_context_t *ctx) {
-    size_t payload_size = PAYLOAD_SIZE;
-    int err = sendto(ctx->send_sock, payload, payload_size, 0, ctx->destination_addrinfo->ai_addr,
-                     ctx->destination_addrinfo->ai_addrlen);
-    if (err == -1) {
-        fprintf(stderr, "ping: sendto: %s\n", strerror(errno));
-        cleanup(ctx);
-        exit(1);
-    }
-}
+// void send_udp_packet(char *payload, ping_context_t *ctx) {
+//     size_t payload_size = PAYLOAD_SIZE;
+//     int err = sendto(ctx->send_sock, payload, payload_size, 0, ctx->destination_addrinfo->ai_addr,
+//                      ctx->destination_addrinfo->ai_addrlen);
+//     if (err == -1) {
+//         fprintf(stderr, "ping: sendto: %s\n", strerror(errno));
+//         cleanup(ctx);
+//         exit(1);
+//     }
+// }
 
 // This write the proper MaybeResolvedAddressString (ip string) to dest buf
 void get_hostname_string_from_ip(const char *ip_str, char *dest_buf, size_t buf_len) {
@@ -65,21 +65,21 @@ void build_packet(icmp_packet_t *packet) {
     packet->header.checksum = checksum((uint16_t *)packet, packet_size);
 }
 
-void update_icmp_packet(icmp_packet_t *packet, uint8_t ttl, uint8_t probe_index) {
-    size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
-    clock_gettime(CLOCK_REALTIME, (struct timespec *)packet->payload);
-    packet->header.un.echo.sequence = htons(1);
-    packet->header.un.echo.sequence = htons((uint16_t)(ttl * 10 + probe_index));
-    packet->header.checksum = 0;
-    packet->header.checksum = checksum((uint16_t *)packet, packet_size);
-};
+// void update_icmp_packet(icmp_packet_t *packet, uint8_t ttl, uint8_t probe_index) {
+//     size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
+//     clock_gettime(CLOCK_REALTIME, (struct timespec *)packet->payload);
+//     packet->header.un.echo.sequence = htons(1);
+//     packet->header.un.echo.sequence = htons((uint16_t)(ttl * 10 + probe_index));
+//     packet->header.checksum = 0;
+//     packet->header.checksum = checksum((uint16_t *)packet, packet_size);
+// };
 
-// Here, Since we are sending to a specific port, we actually update the info of port in the sockadrr_in we will send to
-// We still can upload the payload with the time AFAIK
-void update_udp_packet(char *payload, struct sockaddr_in *dest_addr, uint8_t ttl, uint8_t probe_index) {
-    clock_gettime(CLOCK_REALTIME, (struct timespec *)payload);
-    dest_addr->sin_port = htons(BASE_UDP_PORT + (ttl * MAX_PROBES + probe_index));
-}
+// // Here, Since we are sending to a specific port, we actually update the info of port in the sockadrr_in we will send to
+// // We still can upload the payload with the time AFAIK
+// void update_udp_packet(char *payload, struct sockaddr_in *dest_addr, uint8_t ttl, uint8_t probe_index) {
+//     clock_gettime(CLOCK_REALTIME, (struct timespec *)payload);
+//     dest_addr->sin_port = htons(BASE_UDP_PORT + (ttl * MAX_PROBES + probe_index));
+// }
 
 void cleanup(ping_context_t *ctx) {
     if (ctx->destination_addrinfo)
@@ -91,20 +91,60 @@ void cleanup(ping_context_t *ctx) {
     restore_termios();
 }
 
-void icmp_sending_protocol(uint8_t send_i, ping_context_t *ctx, icmp_packet_t *packet) {
-    uint8_t ttl = send_i / ctx->options.max_probes_per_ttl;
-    uint8_t probe_index = send_i % ctx->options.max_probes_per_ttl;
-    update_socket(ctx, ttl + 1);
-    update_icmp_packet(packet, ttl, probe_index);
-    send_icmp_packet(packet, ctx);
-    clock_gettime(CLOCK_REALTIME, &ctx->probes[ttl][probe_index].sent_at);
+// void icmp_sending_protocol(uint8_t send_i, ping_context_t *ctx, icmp_packet_t *packet) {
+//     uint8_t ttl = send_i / ctx->options.max_probes_per_ttl;
+//     uint8_t probe_index = send_i % ctx->options.max_probes_per_ttl;
+//     update_socket(ctx, ttl + 1);
+//     update_icmp_packet(packet, ttl, probe_index);
+//     send_icmp_packet(packet, ctx);
+//     clock_gettime(CLOCK_REALTIME, &ctx->probes[ttl][probe_index].sent_at);
+// }
+
+// // Do i even fucking need the udp_packet_t type ?!
+// void udp_sending_protocol(uint8_t send_i, ping_context_t *ctx, udp_packet_t *packet) {
+//     uint8_t ttl = send_i / ctx->options.max_probes_per_ttl;
+//     uint8_t probe_index = send_i % ctx->options.max_probes_per_ttl;
+//     update_socket(ctx, ttl + 1);
+//     update_udp_packet(packet->payload, (struct sockaddr_in *)ctx->destination_addrinfo->ai_addr, ttl, probe_index);
+//     send_udp_packet(packet->payload, ctx);
+//     clock_gettime(CLOCK_REALTIME, &ctx->probes[ttl][probe_index].sent_at);
+// }
+
+void update_packet(void *packet, probe_index_t index, ping_context_t *ctx) {
+    if (ctx->options.use_icmp) {
+        icmp_packet_t *icmp = (icmp_packet_t *)packet;
+        size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
+        clock_gettime(CLOCK_REALTIME, (struct timespec *)icmp->payload);
+        icmp->header.un.echo.sequence = htons(1);
+        icmp->header.un.echo.sequence = htons((uint16_t)(index.ttl * 10 + index.probe));
+        icmp->header.checksum = 0;
+        icmp->header.checksum = checksum((uint16_t *)icmp, packet_size);
+    } else {
+        char *udp_payload = (char *)packet;
+        struct sockaddr_in *dest = (struct sockaddr_in *)ctx->destination_addrinfo->ai_addr;
+        clock_gettime(CLOCK_REALTIME, (struct timespec *)udp_payload);
+        dest->sin_port = htons(BASE_UDP_PORT + (index.ttl * MAX_PROBES + index.probe));
+    }
 }
 
-void udp_sending_protocol(uint8_t send_i, ping_context_t *ctx, udp_packet_t *packet) {
-    uint8_t ttl = send_i / ctx->options.max_probes_per_ttl;
-    uint8_t probe_index = send_i % ctx->options.max_probes_per_ttl;
-    update_socket(ctx, ttl + 1);
-    update_udp_packet(packet->payload, (struct sockaddr_in *)ctx->destination_addrinfo->ai_addr, ttl, probe_index);
-    send_udp_packet(packet->payload, ctx);
-    clock_gettime(CLOCK_REALTIME, &ctx->probes[ttl][probe_index].sent_at);
+void send_packet(void *packet, ping_context_t *ctx) {
+    size_t packet_size = ctx->options.use_icmp ? sizeof(struct icmphdr) + PAYLOAD_SIZE : PAYLOAD_SIZE;
+    int err = sendto(ctx->send_sock, packet, packet_size, 0, ctx->destination_addrinfo->ai_addr,
+                     ctx->destination_addrinfo->ai_addrlen);
+    if (err == -1) {
+        fprintf(stderr, "ping: sendto: %s\n", strerror(errno));
+        cleanup(ctx);
+        exit(1);
+    }
+}
+
+void send_protocol(uint8_t send_i, ping_context_t *ctx, void *packet) {
+
+    probe_index_t index = {.ttl = send_i / ctx->options.max_probes_per_ttl,
+                           .probe = send_i % ctx->options.max_probes_per_ttl};
+
+    update_socket(ctx, index.ttl + 1);
+    update_packet(packet, index, ctx);
+    send_packet(packet, ctx);
+    clock_gettime(CLOCK_REALTIME, &ctx->probes[index.ttl][index.probe].sent_at);
 }

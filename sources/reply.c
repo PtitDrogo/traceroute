@@ -1,6 +1,7 @@
 #include "../includes/traceroute.h"
 
 static void parse_icmp_reply(char *response, struct icmphdr **outer_icmp, icmp_packet_t **reply);
+static void parse_udp_reply(char *response, struct icmphdr **outer_icmp, struct udphdr **reply_udp);
 
 void handle_reply(ping_context_t *ctx) {
 
@@ -20,29 +21,69 @@ void handle_reply(ping_context_t *ctx) {
     struct icmphdr *outer_icmp;
     icmp_packet_t *reply;
 
-    //We dont actually
-    // struct udphdr *outer_udp;
-    // udp_packet_t *reply_udp;
+    // We dont actually
+    struct udphdr *reply_udp;
     if (ctx->options.use_icmp) {
         parse_icmp_reply(response, &outer_icmp, &reply);
     } else {
-    //    parse_udp_reply(response, &outer_udp, &reply_udp); 
+        parse_udp_reply(response, &outer_icmp, &reply_udp);
+    }
+    // Im not actually gonna be able to read from the payload
+    // All I want is the sequence number of the response
+
+    uint16_t seq;
+
+    if (ctx->options.use_icmp) {
+        seq = ntohs(reply->header.un.echo.sequence);
+    } else {
+        seq = ntohs(reply_udp->dest);
     }
 
-    uint16_t seq = ntohs(reply->header.un.echo.sequence);
-    probe_index_t probe_idx = get_probe_index_from_sequence(seq);
+    probe_index_t probe_idx;
+
+    if (ctx->options.use_icmp) {
+        probe_idx = get_probe_index_from_sequence(seq);
+    } else {
+        probe_idx = get_probe_index_from_port(seq);
+    }
+
     probe_record_t *probe = &ctx->probes[probe_idx.ttl][probe_idx.probe];
+
+    printf("recv: type=%d code=%d port=%d -> ttl=%d probe=%d status=%d\n", outer_icmp->type, outer_icmp->code, seq,
+           probe_idx.ttl, probe_idx.probe, ctx->probes[probe_idx.ttl][probe_idx.probe].status);
+
     if (probe->status == TIMEOUT)
         return; // This is a ping that we got too late, we ignore it !
 
-    if (outer_icmp->type == ICMP_ECHOREPLY && ntohs(reply->header.un.echo.id) == (uint16_t)getpid()) {
+    // All of this is kinda confusing, but bottom line is:
+    //  -> 99% of the time we receive a time exceeded, we want sed number to compute which probe in our probe struct it
+    //  is
+    //  -> sometime it will be a success, if were ICMP, we read from the payload to get the time because were tryhards.
+
+    if (outer_icmp->type == ICMP_ECHOREPLY && ntohs(reply->header.un.echo.id) == (uint16_t)getpid() &&
+        ctx->options.use_icmp) {
         probe->time_rtt = compute_time_difference(*(struct timespec *)reply->payload);
+        // probe->time_rtt = compute_time_difference(*(struct timespec *)reply->payload);
         if (probe_idx.ttl < ctx->final_ttl) {
             ctx->final_ttl = probe_idx.ttl;
             printf("Setting end reply to %d!\n", ctx->final_ttl);
         }
+    } else if (!ctx->options.use_icmp && outer_icmp->type == ICMP_DEST_UNREACH &&
+               outer_icmp->code == ICMP_PORT_UNREACH) {
+        struct timespec sent_time = ctx->probes[probe_idx.ttl][probe_idx.probe].sent_at;
+        probe->time_rtt = compute_time_difference(sent_time);
+        if (probe_idx.ttl < ctx->final_ttl) {
+            ctx->final_ttl = probe_idx.ttl;
+            printf("Setting end reply to %d!\n", ctx->final_ttl);
+        }
+
     } else if (outer_icmp->type == ICMP_TIME_EXCEEDED) {
-        probe->time_rtt = compute_time_difference(get_probe_time(ctx->probes, seq));
+        if (ctx->options.use_icmp) {
+            probe->time_rtt = compute_time_difference(get_probe_time(ctx->probes, seq));
+        } else {
+            struct timespec sent_time = ctx->probes[probe_idx.ttl][probe_idx.probe].sent_at;
+            probe->time_rtt = compute_time_difference(sent_time);
+        }
     }
     ft_strlcpy(probe->resolved_address, ctx->res.resolved_address, sizeof(probe->resolved_address));
 
@@ -65,4 +106,16 @@ static void parse_icmp_reply(char *response, struct icmphdr **outer_icmp, icmp_p
     } else {
         *reply = (icmp_packet_t *)(response + ip_hdr_len);
     }
+}
+
+static void parse_udp_reply(char *response, struct icmphdr **outer_icmp, struct udphdr **reply_udp) {
+    struct iphdr *ip = (struct iphdr *)response;
+    int ip_hdr_len = ip->ihl * 4;
+    *outer_icmp = (struct icmphdr *)(response + ip_hdr_len);
+
+    // UDP probes only ever get ICMP *error* replies back (never a "success" reply type),
+    // so the inner original packet is always present under TIME_EXCEEDED / DEST_UNREACH.
+    struct iphdr *inner_ip = (struct iphdr *)(response + ip_hdr_len + sizeof(struct icmphdr));
+    int inner_ip_hdr_len = inner_ip->ihl * 4;
+    *reply_udp = (struct udphdr *)((char *)inner_ip + inner_ip_hdr_len);
 }
