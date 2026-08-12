@@ -64,16 +64,24 @@ void update_packet(void *packet, probe_index_t index, ping_context_t *ctx) {
         icmp->header.un.echo.sequence = htons((uint16_t)(index.ttl * 10 + index.probe));
         icmp->header.checksum = 0;
         icmp->header.checksum = checksum((uint16_t *)icmp, packet_size);
+
+
+        printf("ready to send packet: sequence :%d, ", ntohs(icmp->header.un.echo.sequence));
+        printf("ttl i: %d, probe i: %d\n", get_probe_index_from_sequence(ntohs(icmp->header.un.echo.sequence)).ttl, get_probe_index_from_sequence(ntohs(icmp->header.un.echo.sequence)).probe);
     } else {
         char *udp_payload = (char *)packet;
         struct sockaddr_in *dest = (struct sockaddr_in *)ctx->destination_addrinfo->ai_addr;
         clock_gettime(CLOCK_REALTIME, (struct timespec *)udp_payload);
         dest->sin_port = htons(BASE_UDP_PORT + (index.ttl * MAX_PROBES + index.probe));
     }
+
 }
 
 void send_packet(void *packet, ping_context_t *ctx) {
     size_t packet_size = ctx->options.use_icmp ? sizeof(struct icmphdr) + PAYLOAD_SIZE : PAYLOAD_SIZE;
+
+
+
     int err = sendto(ctx->send_sock, packet, packet_size, 0, ctx->destination_addrinfo->ai_addr,
                      ctx->destination_addrinfo->ai_addrlen);
     if (err == -1) {
@@ -91,5 +99,7 @@ void send_protocol(uint8_t send_i, ping_context_t *ctx, void *packet) {
     update_socket(ctx, index.ttl + 1);
     update_packet(packet, index, ctx);
     send_packet(packet, ctx);
+    printf("i ttl: %d, i probe: %d\n", index.ttl, index.probe);
     clock_gettime(CLOCK_REALTIME, &ctx->probes[index.ttl][index.probe].sent_at);
+    printf("Launched at %ld\n", ctx->probes[index.ttl][index.probe].sent_at.tv_sec);
 }
