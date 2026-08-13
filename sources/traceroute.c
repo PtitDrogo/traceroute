@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     }
 
     icmp_packet_t icmp_packet = build_icmp_packet();
-    char *udp_payload[PAYLOAD_SIZE];
+    char udp_payload[PAYLOAD_SIZE] = {0};
 
     print_start_string(&ctx);
     uint32_t send_i = 0;

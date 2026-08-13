@@ -67,9 +67,9 @@ void update_packet(void *packet, probe_index_t index, ping_context_t *ctx) {
         icmp->header.checksum = 0;
         icmp->header.checksum = checksum((uint16_t *)icmp, packet_size);
 
-        printf("ready to send packet: sequence :%d, ", ntohs(icmp->header.un.echo.sequence));
-        printf("ttl i: %d, probe i: %d\n", get_probe_index_from_sequence(ntohs(icmp->header.un.echo.sequence)).ttl,
-               get_probe_index_from_sequence(ntohs(icmp->header.un.echo.sequence)).probe);
+        // printf("ready to send packet: sequence :%d, ", ntohs(icmp->header.un.echo.sequence));
+        // printf("ttl i: %d, probe i: %d\n", get_probe_index_from_sequence(ntohs(icmp->header.un.echo.sequence)).ttl,
+        //        get_probe_index_from_sequence(ntohs(icmp->header.un.echo.sequence)).probe);
     } else {
         char *udp_payload = (char *)packet;
         struct sockaddr_in *dest = (struct sockaddr_in *)ctx->destination_addrinfo->ai_addr;
@@ -78,53 +78,48 @@ void update_packet(void *packet, probe_index_t index, ping_context_t *ctx) {
     }
 }
 
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <stdio.h>
-#include <string.h>
-
 void send_packet(void *packet, ping_context_t *ctx) {
     size_t packet_size = ctx->options.use_icmp ? sizeof(struct icmphdr) + PAYLOAD_SIZE : PAYLOAD_SIZE;
 
-    static bool did_print = false;
-    // Printf nonsense start here
-    //  1. Format the socket address (IP + Port) into a readable string
-    if (did_print == false) {
+    // static bool did_print = false;
+    // // Printf nonsense start here
+    // //  1. Format the socket address (IP + Port) into a readable string
+    // if (did_print == false) {
 
-        char ip_str[INET6_ADDRSTRLEN] = {0};
-        char serv_str[NI_MAXSERV] = {0};
+    //     char ip_str[INET6_ADDRSTRLEN] = {0};
+    //     char serv_str[NI_MAXSERV] = {0};
 
-        getnameinfo(ctx->destination_addrinfo->ai_addr, ctx->destination_addrinfo->ai_addrlen, ip_str, sizeof(ip_str),
-                    serv_str, sizeof(serv_str), NI_NUMERICHOST | NI_NUMERICSERV);
+    //     getnameinfo(ctx->destination_addrinfo->ai_addr, ctx->destination_addrinfo->ai_addrlen, ip_str, sizeof(ip_str),
+    //                 serv_str, sizeof(serv_str), NI_NUMERICHOST | NI_NUMERICSERV);
 
-        // 2. Print high-level sendto metadata
-        printf("sendto(\n"
-               "    sockfd       = %d\n"
-               "    len          = %zu\n"
-               "    flags        = %d\n"
-               "    dest_addr    = %s:%s\n"
-               "    dest_addrlen = %u\n"
-               ")\n",
-               ctx->send_sock, packet_size, 0, ip_str, serv_str, (unsigned int)ctx->destination_addrinfo->ai_addrlen);
+    //     // 2. Print high-level sendto metadata
+    //     printf("sendto(\n"
+    //            "    sockfd       = %d\n"
+    //            "    len          = %zu\n"
+    //            "    flags        = %d\n"
+    //            "    dest_addr    = %s:%s\n"
+    //            "    dest_addrlen = %u\n"
+    //            ")\n",
+    //            ctx->send_sock, packet_size, 0, ip_str, serv_str, (unsigned int)ctx->destination_addrinfo->ai_addrlen);
 
-        // 3. Print the raw hex content of the packet buffer
-        printf("Buffer Content (Hex):\n    ");
-        unsigned char *buf = (unsigned char *)packet;
-        for (size_t i = 0; i < packet_size; i++) {
-            printf("%02x ", buf[i]);
-            if ((i + 1) % 16 == 0) { // Line break every 16 bytes for readability
-                printf("\n    ");
-            }
-        }
-        struct sockaddr_in *sin = (struct sockaddr_in *)ctx->destination_addrinfo->ai_addr;
+    //     // 3. Print the raw hex content of the packet buffer
+    //     printf("Buffer Content (Hex):\n    ");
+    //     unsigned char *buf = (unsigned char *)packet;
+    //     for (size_t i = 0; i < packet_size; i++) {
+    //         printf("%02x ", buf[i]);
+    //         if ((i + 1) % 16 == 0) { // Line break every 16 bytes for readability
+    //             printf("\n    ");
+    //         }
+    //     }
+    //     struct sockaddr_in *sin = (struct sockaddr_in *)ctx->destination_addrinfo->ai_addr;
 
-        printf("\nSending to IP: %s | Port: %d (ntohs: %d)\n", inet_ntoa(sin->sin_addr),
-               sin->sin_port,       // Raw network byte order
-               ntohs(sin->sin_port) // Host byte order (Human readable)
-        );
-        printf("\n");
-    }
-    did_print = true;
+    //     printf("\nSending to IP: %s | Port: %d (ntohs: %d)\n", inet_ntoa(sin->sin_addr),
+    //            sin->sin_port,       // Raw network byte order
+    //            ntohs(sin->sin_port) // Host byte order (Human readable)
+    //     );
+    //     printf("\n");
+    // }
+    // did_print = true;
     // printf nonsense ends here
 
     // Execute sendto

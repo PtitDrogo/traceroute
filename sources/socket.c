@@ -1,7 +1,6 @@
 #include "../includes/traceroute.h"
 
 void create_socket(ping_context_t *ctx) {
-    // For now were using ICMP, but later the protocol will be a variable.
     int sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
     struct timeval tv = {.tv_sec = 1, .tv_usec = 0};
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));

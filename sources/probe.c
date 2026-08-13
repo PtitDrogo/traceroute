@@ -72,7 +72,7 @@ uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i) {
 
     double time_since_sent_ms = compute_time_difference(oldest_probe->sent_at);
 
-    if (time_since_sent_ms <= 3000)
+    if (time_since_sent_ms <= 1000)
         return responded_probes;
     // If we are here, our probe is in PENDING and is past the timeout.
     // So we change its status to Timeout and all the other vars.
@@ -85,6 +85,6 @@ uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i) {
         oldest_i->probe = 0;
         oldest_i->ttl += 1;
     }
-    printf("Oldest probe is increased by 1 because the current one is a timeout\n");
+    // printf("Oldest probe is increased by 1 because the current one is a timeout\n");
     return responded_probes + 1; // in theory were never here
 }
