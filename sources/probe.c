@@ -63,6 +63,7 @@ uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i) {
     oldest_probe->status = TIMEOUT;
     oldest_probe->time_rtt = -1;
     ft_strlcpy(oldest_probe->resolved_address, "* ", sizeof("* "));
+    ft_strlcpy(oldest_probe->ip, "", sizeof(oldest_probe->ip));
 
     oldest_i->probe += 1;
     if (oldest_i->probe == ctx->options.max_probes_per_ttl) {
@@ -70,5 +71,5 @@ uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i) {
         oldest_i->ttl += 1;
     }
     // printf("Oldest probe is increased by 1 because the current one is a timeout\n");
-    return responded_probes + 1; // in theory were never here
+    return responded_probes + 1;
 }

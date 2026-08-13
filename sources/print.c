@@ -7,22 +7,21 @@ void print_start_string(const ping_context_t *ctx) {
 }
 
 void print_ttl_group(ping_context_t *ctx) {
-    char *curr_addrr = "";
+    char curr_ip[INET_ADDRSTRLEN] = "";
 
     printf("%d ", ctx->curr_ttl_to_print + 1);
     for (uint8_t i = 0; i < ctx->options.max_probes_per_ttl; i++) {
-        probe_record_t cur = ctx->probes[ctx->curr_ttl_to_print][i];
-        if (strcmp(cur.resolved_address, "* ") == 0) {
+        probe_record_t *cur = &ctx->probes[ctx->curr_ttl_to_print][i];
+        if (strcmp(cur->resolved_address, "* ") == 0) {
             printf("* ");
-        } else if (strcmp(cur.resolved_address, curr_addrr) == 0) {
-            printf("%0.3f ms ", cur.time_rtt);
+        } else if (strcmp(cur->ip, curr_ip) == 0) {
+            printf("%0.3f ms ", cur->time_rtt);
         } else {
-            printf("%s %0.3f ms ", cur.resolved_address, cur.time_rtt);
-            curr_addrr = cur.resolved_address;
+            printf("%s %0.3f ms ", cur->resolved_address, cur->time_rtt);
+            ft_strlcpy(curr_ip, cur->ip, sizeof(curr_ip));
         }
     }
     printf("\n");
-    return;
 }
 
 bool is_ttl_group_ready(const ping_context_t *ctx) {

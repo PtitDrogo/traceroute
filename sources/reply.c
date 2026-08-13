@@ -64,6 +64,7 @@ void handle_reply(ping_context_t *ctx) {
         probe->time_rtt = compute_time_difference(sent_time);
     }
     ft_strlcpy(probe->resolved_address, ctx->res.resolved_address, sizeof(probe->resolved_address));
+    ft_strlcpy(probe->ip, ip_addr, sizeof(probe->ip));
 
     // This can probe and and will often be the oldest probe, but that should be handled in the timeout function.
     probe->status = RESPONDED;

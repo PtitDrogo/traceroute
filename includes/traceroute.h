@@ -57,6 +57,7 @@ typedef struct {
     probe_status status;
     char resolved_address[NI_MAXHOST];
     double time_rtt;
+    char ip[INET_ADDRSTRLEN];
 } probe_record_t;
 
 typedef struct {

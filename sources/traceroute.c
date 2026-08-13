@@ -29,6 +29,7 @@ int main(int argc, char *argv[]) {
     uint32_t send_i = 0;
     void *packet = ctx.options.use_icmp ? (void *)&icmp_packet : (void *)udp_payload;
     for (; send_i < ctx.options.max_probes_in_flight; send_i++) {
+        
         send_protocol(send_i, &ctx, packet);
     }
 
@@ -50,7 +51,6 @@ int main(int argc, char *argv[]) {
         }
         uint8_t available_probe_slots = handle_responded_probes(&ctx, &oldest_i);
         for (uint8_t i = 0; i < available_probe_slots; i++) {
-            // printf("\n\n Sending new probes ! \n\n");
             send_protocol(send_i, &ctx, packet);
             send_i++;
         }
