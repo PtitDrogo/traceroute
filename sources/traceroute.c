@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 
     print_start_string(&ctx);
     uint32_t send_i = 0;
-    void *packet = ctx.options.use_icmp ? (void *)&icmp_packet : (void *)&udp_payload;
+    void *packet = ctx.options.use_icmp ? (void *)&icmp_packet : (void *)udp_payload;
     for (; send_i < ctx.options.max_probes_in_flight; send_i++) {
         send_protocol(send_i, &ctx, packet);
     }
