@@ -61,11 +61,11 @@ uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i) {
     uint8_t responded_probes = 0;
     probe_index_t idx = find_next_oldest_probe_index(*oldest_i, ctx->probes, &responded_probes, ctx->final_ttl_index,
                                                      ctx->options.max_probes_per_ttl);
-    if (responded_probes != 0) {
-        printf("Responded probe isnt 0 ! -> %d\n", responded_probes);
-        printf("oldest probe -> ttl : %d, probe_i : %d\n", idx.ttl, idx.probe);
+    // if (responded_probes != 0) {
+    //     printf("Responded probe isnt 0 ! -> %d\n", responded_probes);
+    //     printf("oldest probe -> ttl : %d, probe_i : %d\n", idx.ttl, idx.probe);
         
-    }
+    // }
     oldest_i->probe = idx.probe;
     oldest_i->ttl = idx.ttl;
     probe_record_t *oldest_probe = &ctx->probes[idx.ttl][idx.probe];

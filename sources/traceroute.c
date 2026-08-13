@@ -11,6 +11,7 @@ int main(int argc, char *argv[]) {
     parse_flags(&ctx, argc, argv);
     struct addrinfo hints = {0};
     hints.ai_family = AF_INET;
+    hints.ai_socktype = ctx.options.use_icmp ? SOCK_RAW : SOCK_DGRAM;
 
     create_socket(&ctx);
     int err = getaddrinfo(ctx.arg_address, NULL, &hints, &ctx.destination_addrinfo);
@@ -21,7 +22,7 @@ int main(int argc, char *argv[]) {
     }
 
     icmp_packet_t icmp_packet = build_icmp_packet();
-    char *udp_payload[UINT16_MAX];
+    char *udp_payload[PAYLOAD_SIZE];
 
     print_start_string(&ctx);
     uint32_t send_i = 0;
@@ -48,7 +49,7 @@ int main(int argc, char *argv[]) {
         }
         uint8_t available_probe_slots = handle_responded_probes(&ctx, &oldest_i);
         for (uint8_t i = 0; i < available_probe_slots; i++) {
-            printf("\n\n Sending new probes ! \n\n");
+            // printf("\n\n Sending new probes ! \n\n");
             send_protocol(send_i, &ctx, packet);
             send_i++;
         }

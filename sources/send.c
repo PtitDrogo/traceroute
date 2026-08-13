@@ -78,9 +78,56 @@ void update_packet(void *packet, probe_index_t index, ping_context_t *ctx) {
     }
 }
 
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <stdio.h>
+#include <string.h>
+
 void send_packet(void *packet, ping_context_t *ctx) {
     size_t packet_size = ctx->options.use_icmp ? sizeof(struct icmphdr) + PAYLOAD_SIZE : PAYLOAD_SIZE;
 
+    static bool did_print = false;
+    // Printf nonsense start here
+    //  1. Format the socket address (IP + Port) into a readable string
+    if (did_print == false) {
+
+        char ip_str[INET6_ADDRSTRLEN] = {0};
+        char serv_str[NI_MAXSERV] = {0};
+
+        getnameinfo(ctx->destination_addrinfo->ai_addr, ctx->destination_addrinfo->ai_addrlen, ip_str, sizeof(ip_str),
+                    serv_str, sizeof(serv_str), NI_NUMERICHOST | NI_NUMERICSERV);
+
+        // 2. Print high-level sendto metadata
+        printf("sendto(\n"
+               "    sockfd       = %d\n"
+               "    len          = %zu\n"
+               "    flags        = %d\n"
+               "    dest_addr    = %s:%s\n"
+               "    dest_addrlen = %u\n"
+               ")\n",
+               ctx->send_sock, packet_size, 0, ip_str, serv_str, (unsigned int)ctx->destination_addrinfo->ai_addrlen);
+
+        // 3. Print the raw hex content of the packet buffer
+        printf("Buffer Content (Hex):\n    ");
+        unsigned char *buf = (unsigned char *)packet;
+        for (size_t i = 0; i < packet_size; i++) {
+            printf("%02x ", buf[i]);
+            if ((i + 1) % 16 == 0) { // Line break every 16 bytes for readability
+                printf("\n    ");
+            }
+        }
+        struct sockaddr_in *sin = (struct sockaddr_in *)ctx->destination_addrinfo->ai_addr;
+
+        printf("\nSending to IP: %s | Port: %d (ntohs: %d)\n", inet_ntoa(sin->sin_addr),
+               sin->sin_port,       // Raw network byte order
+               ntohs(sin->sin_port) // Host byte order (Human readable)
+        );
+        printf("\n");
+    }
+    did_print = true;
+    // printf nonsense ends here
+
+    // Execute sendto
     int err = sendto(ctx->send_sock, packet, packet_size, 0, ctx->destination_addrinfo->ai_addr,
                      ctx->destination_addrinfo->ai_addrlen);
     if (err == -1) {
@@ -98,7 +145,7 @@ void send_protocol(uint8_t send_i, ping_context_t *ctx, void *packet) {
     update_socket(ctx, index.ttl + 1);
     update_packet(packet, index, ctx);
     send_packet(packet, ctx);
-    printf("i ttl: %d, i probe: %d\n", index.ttl, index.probe);
+    // printf("i ttl: %d, i probe: %d\n", index.ttl, index.probe);
     clock_gettime(CLOCK_REALTIME, &ctx->probes[index.ttl][index.probe].sent_at);
-    printf("Launched at %ld\n", ctx->probes[index.ttl][index.probe].sent_at.tv_sec);
+    // printf("Launched at %ld\n", ctx->probes[index.ttl][index.probe].sent_at.tv_sec);
 }

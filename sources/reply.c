@@ -4,7 +4,7 @@ static void parse_icmp_reply(char *response, struct icmphdr **outer_icmp, icmp_p
 static void parse_udp_reply(char *response, struct icmphdr **outer_icmp, struct udphdr **reply_udp);
 
 void handle_reply(ping_context_t *ctx) {
-
+    printf("Hello\n ?");
     struct sockaddr_in response_in;
     socklen_t src_len = sizeof(response_in);
     char response[UINT16_MAX];
