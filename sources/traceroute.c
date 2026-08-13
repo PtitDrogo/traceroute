@@ -1,13 +1,14 @@
 #include "../includes/traceroute.h"
 
-static ping_context_t init();
+static void init(ping_context_t *ctx);
 
 int main(int argc, char *argv[]) {
     if (geteuid() != 0) {
         printf("ping: sudo rights are required, exiting.\n");
         return EXIT_FAILURE;
     }
-    ping_context_t ctx = init();
+    ping_context_t ctx = {0};
+    init(&ctx);
     parse_flags(&ctx, argc, argv);
     struct addrinfo hints = {0};
     hints.ai_family = AF_INET;
@@ -63,11 +64,9 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE; // This is actually a failure if we get here.
 }
 
-static ping_context_t init() {
+static void init(ping_context_t *ctx) {
     disable_echoctl();
-    ping_context_t ctx = {0};
-    ctx.final_ttl_index = DEFAULT_TTL - 1;
-    ctx.options.max_probes_per_ttl = DEFAULT_PROBE;
-    ctx.options.max_probes_in_flight = DEFAULT_IN_FLIGHT_PROBES;
-    return ctx;
+    ctx->final_ttl_index = DEFAULT_TTL - 1;
+    ctx->options.max_probes_per_ttl = DEFAULT_PROBE;
+    ctx->options.max_probes_in_flight = DEFAULT_IN_FLIGHT_PROBES;
 }

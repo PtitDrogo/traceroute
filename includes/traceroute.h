@@ -24,7 +24,7 @@
 #define PAYLOAD_SIZE 56
 #define DEFAULT_TTL 30
 #define DEFAULT_PROBE 3
-#define MAX_TTL UINT8_MAX
+#define MAX_TTL 100 //If youre human youll probably just heap allocate this later using the param given by the user
 #define MAX_PROBES 10
 #define DEFAULT_IN_FLIGHT_PROBES 16
 
