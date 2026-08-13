@@ -18,7 +18,7 @@ void parse_flags(ping_context_t *ctx, int argc, char *argv[]) {
             ctx->options.use_icmp = true;
             break;
         case 'm':
-            ctx->final_ttl = (uint8_t)parse_num(ctx, UINT8_MAX, 'm') - 1;
+            ctx->final_ttl_index = (uint8_t)parse_num(ctx, UINT8_MAX, 'm') - 1;
             break;
         case 'q':
             ctx->options.max_probes_per_ttl = (uint8_t)parse_num(ctx, 10, 'q');
@@ -55,7 +55,7 @@ void parse_flags(ping_context_t *ctx, int argc, char *argv[]) {
     }
 
     ctx->arg_address = argv[optind];
-    uint32_t max_theorical_probes = ctx->final_ttl * ctx->options.max_probes_per_ttl;
+    uint32_t max_theorical_probes = (ctx->final_ttl_index + 1) * ctx->options.max_probes_per_ttl;
     ctx->options.max_probes_in_flight = (uint32_t) fmin(ctx->options.max_probes_in_flight, fmin(max_theorical_probes, 255));
     return;
 }

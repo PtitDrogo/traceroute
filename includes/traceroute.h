@@ -24,7 +24,7 @@
 #define PAYLOAD_SIZE 56
 #define DEFAULT_TTL 30
 #define DEFAULT_PROBE 3
-#define MAX_TTL UINT8_MAX
+#define MAX_TTL 100 //If youre human youll probably just heap allocate this later using the param given by the user
 #define MAX_PROBES 10
 #define DEFAULT_IN_FLIGHT_PROBES 16
 
@@ -73,7 +73,7 @@ typedef struct {
 typedef struct {
     probe_record_t probes[MAX_TTL][MAX_PROBES];
     uint8_t curr_ttl_to_print;
-    uint8_t final_ttl;
+    uint8_t final_ttl_index;
     response_data_t res;
     options_t options;
     // Basic start data
@@ -84,14 +84,14 @@ typedef struct {
 } ping_context_t;
 
 // send
-void send_icmp_packet(icmp_packet_t *packet, ping_context_t *ctx);
-void build_packet(icmp_packet_t *packet);
-void update_icmp_packet(icmp_packet_t *packet, uint8_t ttl, uint8_t probe_index);
+icmp_packet_t build_icmp_packet();
 void create_socket(ping_context_t *ctx);
 void update_socket(ping_context_t *ctx, uint8_t ttl);
-void icmp_sending_protocol(uint8_t send_i, ping_context_t *ctx, icmp_packet_t *packet);
-void udp_sending_protocol(uint8_t send_i, ping_context_t *ctx, udp_packet_t *packet);
 uint16_t checksum(const uint16_t *data, size_t size);
+
+void update_packet(void *packet, probe_index_t index, ping_context_t *ctx);
+void send_packet(void *packet, ping_context_t *ctx);
+void send_protocol(uint8_t send_i, ping_context_t *ctx, void *packet);
 
 // reply
 void handle_reply(ping_context_t *ctx);
@@ -115,8 +115,8 @@ void print_start_string(const ping_context_t *ctx);
 void print_ready_ttl_groups(ping_context_t *ctx);
 
 // probe
-struct timespec get_probe_time(probe_record_t probes[MAX_TTL][MAX_PROBES], uint16_t seq);
 uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i);
-probe_index_t get_probe_index_from_sequence(uint16_t seq);
+probe_index_t get_decoded_probe_index(uint16_t encoded, bool use_icmp);
+void print_probe_struct(ping_context_t *ctx);
 
 #endif

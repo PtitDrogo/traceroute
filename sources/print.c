@@ -37,7 +37,7 @@ void print_ready_ttl_groups(ping_context_t *ctx) {
     while (is_ttl_group_ready(ctx)) {
         print_ttl_group(ctx);
         ctx->curr_ttl_to_print += 1;
-        if (ctx->curr_ttl_to_print > ctx->final_ttl) { // Do not touch this ! :)
+        if (ctx->curr_ttl_to_print > ctx->final_ttl_index) { // Do not touch this ! :)
             cleanup(ctx);
             exit(EXIT_SUCCESS);
         }

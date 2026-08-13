@@ -28,7 +28,7 @@ SRCS =		$(SRCS_DIR)/traceroute.c \
 #---------------------------------Compilation & Linking---------------------------------#
 CC		=	cc
 RM		=	rm -f
-CFLAGS	=	-Wall -Wextra -Werror -pthread 
+CFLAGS	=	-Wall -Wextra -Werror -pthread -g3
 INCLUDES = -I $(HEADER_DIR)
 #------------------------------------------------------------------------#
 
