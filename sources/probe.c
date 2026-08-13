@@ -57,9 +57,8 @@ uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i) {
 
     double time_since_sent_ms = compute_time_difference(oldest_probe->sent_at);
 
-    if (time_since_sent_ms <= 2000)
+    if (time_since_sent_ms <= 3000)
         return responded_probes;
-    printf("Hello ?\n");
     // If we are here, our probe is in PENDING and is past the timeout.
     // So we change its status to Timeout and all the other vars.
     oldest_probe->status = TIMEOUT;

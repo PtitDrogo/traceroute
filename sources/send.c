@@ -28,21 +28,24 @@ double compute_time_difference(struct timespec past_time) {
     return rtt;
 }
 
-void build_packet(icmp_packet_t *packet) {
+icmp_packet_t build_icmp_packet() {
+    icmp_packet_t icmp_packet = {.header.type = ICMP_ECHO,
+                                 .header.code = 0,
+                                 .header.checksum = 0,
+                                 .header.un = {.echo = {.id = htons(getpid()), .sequence = htons(1)}}};
     size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
     size_t start_idx = 0;
-    clock_gettime(CLOCK_REALTIME, (struct timespec *)packet->payload);
+    clock_gettime(CLOCK_REALTIME, (struct timespec *)icmp_packet.payload);
     start_idx = sizeof(struct timespec);
 
     for (size_t i = start_idx; i < PAYLOAD_SIZE; i++) {
-        packet->payload[i] = i;
+        icmp_packet.payload[i] = i;
     }
 
-    packet->header.un.echo.sequence = htons(1);
-    packet->header.checksum = 0;
-    packet->header.checksum = checksum((uint16_t *)packet, packet_size);
+    icmp_packet.header.checksum = 0;
+    icmp_packet.header.checksum = checksum((uint16_t *)&icmp_packet, packet_size);
+    return icmp_packet;
 }
-
 
 void cleanup(ping_context_t *ctx) {
     if (ctx->destination_addrinfo)
@@ -54,7 +57,6 @@ void cleanup(ping_context_t *ctx) {
     restore_termios();
 }
 
-
 void update_packet(void *packet, probe_index_t index, ping_context_t *ctx) {
     if (ctx->options.use_icmp) {
         icmp_packet_t *icmp = (icmp_packet_t *)packet;
@@ -65,22 +67,19 @@ void update_packet(void *packet, probe_index_t index, ping_context_t *ctx) {
         icmp->header.checksum = 0;
         icmp->header.checksum = checksum((uint16_t *)icmp, packet_size);
 
-
         printf("ready to send packet: sequence :%d, ", ntohs(icmp->header.un.echo.sequence));
-        printf("ttl i: %d, probe i: %d\n", get_probe_index_from_sequence(ntohs(icmp->header.un.echo.sequence)).ttl, get_probe_index_from_sequence(ntohs(icmp->header.un.echo.sequence)).probe);
+        printf("ttl i: %d, probe i: %d\n", get_probe_index_from_sequence(ntohs(icmp->header.un.echo.sequence)).ttl,
+               get_probe_index_from_sequence(ntohs(icmp->header.un.echo.sequence)).probe);
     } else {
         char *udp_payload = (char *)packet;
         struct sockaddr_in *dest = (struct sockaddr_in *)ctx->destination_addrinfo->ai_addr;
         clock_gettime(CLOCK_REALTIME, (struct timespec *)udp_payload);
         dest->sin_port = htons(BASE_UDP_PORT + (index.ttl * MAX_PROBES + index.probe));
     }
-
 }
 
 void send_packet(void *packet, ping_context_t *ctx) {
     size_t packet_size = ctx->options.use_icmp ? sizeof(struct icmphdr) + PAYLOAD_SIZE : PAYLOAD_SIZE;
-
-
 
     int err = sendto(ctx->send_sock, packet, packet_size, 0, ctx->destination_addrinfo->ai_addr,
                      ctx->destination_addrinfo->ai_addrlen);

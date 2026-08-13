@@ -84,7 +84,7 @@ typedef struct {
 } ping_context_t;
 
 // send
-void build_packet(icmp_packet_t *packet);
+icmp_packet_t build_icmp_packet();
 void create_socket(ping_context_t *ctx);
 void update_socket(ping_context_t *ctx, uint8_t ttl);
 uint16_t checksum(const uint16_t *data, size_t size);

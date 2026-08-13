@@ -20,11 +20,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    icmp_packet_t icmp_packet = {.header.type = ICMP_ECHO,
-                                 .header.code = 0,
-                                 .header.checksum = 0,
-                                 .header.un = {.echo = {.id = htons(getpid()), .sequence = htons(1)}}};
-    build_packet(&icmp_packet);
+    icmp_packet_t icmp_packet = build_icmp_packet();
     char *udp_payload[UINT16_MAX];
 
     print_start_string(&ctx);
