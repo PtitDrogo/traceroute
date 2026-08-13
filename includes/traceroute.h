@@ -73,7 +73,7 @@ typedef struct {
 typedef struct {
     probe_record_t probes[MAX_TTL][MAX_PROBES];
     uint8_t curr_ttl_to_print;
-    uint8_t final_ttl;
+    uint8_t final_ttl_index;
     response_data_t res;
     options_t options;
     // Basic start data
@@ -119,5 +119,6 @@ struct timespec get_probe_time(probe_record_t probes[MAX_TTL][MAX_PROBES], uint1
 uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i);
 probe_index_t get_probe_index_from_sequence(uint16_t seq);
 probe_index_t get_probe_index_from_port(uint16_t port);
+void print_probe_struct(ping_context_t *ctx);
 
 #endif

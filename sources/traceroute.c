@@ -48,9 +48,11 @@ int main(int argc, char *argv[]) {
         }
         uint8_t available_probe_slots = handle_responded_probes(&ctx, &oldest_i);
         for (; send_i < available_probe_slots; send_i++) {
+            printf("\n\n Sending new probes ! \n\n");
             send_protocol(send_i, &ctx, packet);
             send_i++;
         }
+        // print_probe_struct(&ctx);
 
         print_ready_ttl_groups(&ctx);
     }
@@ -63,7 +65,7 @@ int main(int argc, char *argv[]) {
 static ping_context_t init() {
     disable_echoctl();
     ping_context_t ctx = {0};
-    ctx.final_ttl = DEFAULT_TTL;
+    ctx.final_ttl_index = DEFAULT_TTL - 1;
     ctx.options.max_probes_per_ttl = DEFAULT_PROBE;
     ctx.options.max_probes_in_flight = DEFAULT_IN_FLIGHT_PROBES;
     return ctx;

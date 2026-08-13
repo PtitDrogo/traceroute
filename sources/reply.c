@@ -64,17 +64,17 @@ void handle_reply(ping_context_t *ctx) {
         ctx->options.use_icmp) {
         probe->time_rtt = compute_time_difference(*(struct timespec *)reply->payload);
         // probe->time_rtt = compute_time_difference(*(struct timespec *)reply->payload);
-        if (probe_idx.ttl < ctx->final_ttl) {
-            ctx->final_ttl = probe_idx.ttl;
-            printf("Setting end reply to %d!\n", ctx->final_ttl);
+        if (probe_idx.ttl < ctx->final_ttl_index) {
+            ctx->final_ttl_index = probe_idx.ttl;
+            printf("Setting end reply to %d!\n", ctx->final_ttl_index);
         }
     } else if (!ctx->options.use_icmp && outer_icmp->type == ICMP_DEST_UNREACH &&
                outer_icmp->code == ICMP_PORT_UNREACH) {
         struct timespec sent_time = ctx->probes[probe_idx.ttl][probe_idx.probe].sent_at;
         probe->time_rtt = compute_time_difference(sent_time);
-        if (probe_idx.ttl < ctx->final_ttl) {
-            ctx->final_ttl = probe_idx.ttl;
-            printf("Setting end reply to %d!\n", ctx->final_ttl);
+        if (probe_idx.ttl < ctx->final_ttl_index) {
+            ctx->final_ttl_index = probe_idx.ttl;
+            printf("Setting end reply to %d!\n", ctx->final_ttl_index);
         }
 
     } else if (outer_icmp->type == ICMP_TIME_EXCEEDED) {
@@ -119,3 +119,10 @@ static void parse_udp_reply(char *response, struct icmphdr **outer_icmp, struct 
     int inner_ip_hdr_len = inner_ip->ihl * 4;
     *reply_udp = (struct udphdr *)((char *)inner_ip + inner_ip_hdr_len);
 }
+
+// Gets to the end of ip header, cast this to whatever type you think you have.
+// static void *get_end_of_ip_header(char *response) {
+//     struct iphdr *ip = (struct iphdr *)response;
+//     int ip_hdr_len = ip->ihl * 4;
+//     return response + ip_hdr_len;
+// }
