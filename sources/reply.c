@@ -7,6 +7,7 @@ void handle_reply(ping_context_t *ctx) {
     struct sockaddr_in response_in;
     socklen_t src_len = sizeof(response_in);
     char response[UINT16_MAX];
+    bool use_icmp = ctx->options.use_icmp;
 
     ssize_t bytes_received =
         recvfrom(ctx->recv_sock, &response, sizeof(response), 0, (struct sockaddr *)&response_in, &src_len);
@@ -20,9 +21,8 @@ void handle_reply(ping_context_t *ctx) {
     struct icmphdr *outer_icmp;
     icmp_packet_t *reply;
 
-    // We dont actually
     struct udphdr *reply_udp;
-    if (ctx->options.use_icmp) {
+    if (use_icmp) {
         parse_icmp_reply(response, &outer_icmp, &reply);
     } else {
         parse_udp_reply(response, &outer_icmp, &reply_udp);
@@ -30,22 +30,8 @@ void handle_reply(ping_context_t *ctx) {
     // Im not actually gonna be able to read from the payload
     // All I want is the sequence number of the response
 
-    uint16_t seq;
-
-    if (ctx->options.use_icmp) {
-        seq = ntohs(reply->header.un.echo.sequence);
-    } else {
-        seq = ntohs(reply_udp->dest);
-    }
-
-    probe_index_t probe_idx;
-
-    if (ctx->options.use_icmp) {
-        probe_idx = get_probe_index_from_sequence(seq);
-    } else {
-        probe_idx = get_probe_index_from_port(seq);
-    }
-
+    uint16_t seq = ntohs(use_icmp ? reply->header.un.echo.sequence : reply_udp->dest);
+    probe_index_t probe_idx = get_decoded_probe_index(seq, use_icmp);
     probe_record_t *probe = &ctx->probes[probe_idx.ttl][probe_idx.probe];
 
     printf("recv: type=%d code=%d port=%d -> ttl=%d probe=%d status=%d\n", outer_icmp->type, outer_icmp->code, seq,
@@ -59,16 +45,13 @@ void handle_reply(ping_context_t *ctx) {
     //  is
     //  -> sometime it will be a success, if were ICMP, we read from the payload to get the time because were tryhards.
 
-    if (outer_icmp->type == ICMP_ECHOREPLY && ntohs(reply->header.un.echo.id) == (uint16_t)getpid() &&
-        ctx->options.use_icmp) {
+    if (outer_icmp->type == ICMP_ECHOREPLY && ntohs(reply->header.un.echo.id) == (uint16_t)getpid() && use_icmp) {
         probe->time_rtt = compute_time_difference(*(struct timespec *)reply->payload);
-        // probe->time_rtt = compute_time_difference(*(struct timespec *)reply->payload);
         if (probe_idx.ttl < ctx->final_ttl_index) {
             ctx->final_ttl_index = probe_idx.ttl;
             printf("Setting end reply to %d!\n", ctx->final_ttl_index);
         }
-    } else if (!ctx->options.use_icmp && outer_icmp->type == ICMP_DEST_UNREACH &&
-               outer_icmp->code == ICMP_PORT_UNREACH) {
+    } else if (!use_icmp && outer_icmp->type == ICMP_DEST_UNREACH && outer_icmp->code == ICMP_PORT_UNREACH) {
         struct timespec sent_time = ctx->probes[probe_idx.ttl][probe_idx.probe].sent_at;
         probe->time_rtt = compute_time_difference(sent_time);
         if (probe_idx.ttl < ctx->final_ttl_index) {
@@ -77,12 +60,8 @@ void handle_reply(ping_context_t *ctx) {
         }
 
     } else if (outer_icmp->type == ICMP_TIME_EXCEEDED) {
-        if (ctx->options.use_icmp) {
-            probe->time_rtt = compute_time_difference(get_probe_time(ctx->probes, seq));
-        } else {
-            struct timespec sent_time = ctx->probes[probe_idx.ttl][probe_idx.probe].sent_at;
-            probe->time_rtt = compute_time_difference(sent_time);
-        }
+        struct timespec sent_time = ctx->probes[probe_idx.ttl][probe_idx.probe].sent_at;
+        probe->time_rtt = compute_time_difference(sent_time);
     }
     ft_strlcpy(probe->resolved_address, ctx->res.resolved_address, sizeof(probe->resolved_address));
 

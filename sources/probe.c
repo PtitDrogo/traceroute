@@ -1,26 +1,10 @@
 #include "../includes/traceroute.h"
 
-void init_probes(probe_record_t probes) { (void)probes; }
-
-probe_index_t get_probe_index_from_sequence(uint16_t seq) {
-    // uint16_t seq = ntohs(icmp->header.un.echo.sequence);
+probe_index_t get_decoded_probe_index(uint16_t encoded, bool use_icmp) {
     probe_index_t idx = {0};
-    idx.ttl = seq / 10;
-    idx.probe = seq % 10;
+    idx.ttl = (encoded - (BASE_UDP_PORT * !use_icmp)) / 10;
+    idx.probe = (encoded - (BASE_UDP_PORT * !use_icmp)) % 10;
     return idx;
-}
-
-probe_index_t get_probe_index_from_port(uint16_t port) {
-    probe_index_t idx = {0};
-
-    idx.ttl = (port - BASE_UDP_PORT) / 10;
-    idx.probe = (port - BASE_UDP_PORT) % 10;
-    return idx;
-}
-
-struct timespec get_probe_time(probe_record_t probes[MAX_TTL][MAX_PROBES], uint16_t seq) {
-    probe_index_t idx = get_probe_index_from_sequence(seq);
-    return probes[idx.ttl][idx.probe].sent_at;
 }
 
 // Return the index of the first next instance of pending probe
@@ -64,7 +48,7 @@ uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i) {
     // if (responded_probes != 0) {
     //     printf("Responded probe isnt 0 ! -> %d\n", responded_probes);
     //     printf("oldest probe -> ttl : %d, probe_i : %d\n", idx.ttl, idx.probe);
-        
+
     // }
     oldest_i->probe = idx.probe;
     oldest_i->ttl = idx.ttl;
