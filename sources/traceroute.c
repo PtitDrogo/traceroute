@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
             handle_reply(&ctx);
         }
         uint8_t available_probe_slots = handle_responded_probes(&ctx, &oldest_i);
-        for (; send_i < available_probe_slots; send_i++) {
+        for (uint8_t i = 0; i < available_probe_slots; i++) {
             printf("\n\n Sending new probes ! \n\n");
             send_protocol(send_i, &ctx, packet);
             send_i++;
