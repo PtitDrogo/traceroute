@@ -11,10 +11,10 @@ probe_index_t get_decoded_probe_index(uint16_t encoded, bool use_icmp) {
 // if the probe you give it is the oldest, it will just return that.
 // Increases count by one for every row walked.
 probe_index_t find_next_oldest_probe_index(probe_index_t cur, probe_record_t probes[MAX_TTL][MAX_PROBES],
-                                           uint8_t *count, uint8_t max_ttl, uint8_t max_probes_per_ttl) {
+                                           uint8_t *count, uint8_t max_ttl_index, uint8_t max_probes_per_ttl) {
     probe_index_t res;
 
-    for (uint8_t ttl = cur.ttl; ttl < max_ttl; ttl++) {
+    for (uint8_t ttl = cur.ttl; ttl <= max_ttl_index; ttl++) {
         for (uint8_t probe = cur.probe; probe < max_probes_per_ttl; probe++) {
             if (probes[ttl][probe].status == PENDING) {
                 res.ttl = ttl;
@@ -26,7 +26,7 @@ probe_index_t find_next_oldest_probe_index(probe_index_t cur, probe_record_t pro
         cur.probe = 0;
     }
     res.probe = max_probes_per_ttl;
-    res.ttl = max_ttl;
+    res.ttl = max_ttl_index;
     return res;
 };
 
