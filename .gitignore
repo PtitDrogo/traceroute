@@ -74,5 +74,3 @@ cmake_install.cmake
 Thumbs.db
 
 .clang-format
-
-ft_ping
