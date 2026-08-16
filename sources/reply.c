@@ -16,12 +16,14 @@ void handle_reply(ping_context_t *ctx) {
         exit(1);
     }
     char *ip_addr = inet_ntoa(response_in.sin_addr);
-    struct timespec before_dns;
-    clock_gettime(CLOCK_REALTIME, &before_dns);
-    get_hostname_string_from_ip(ip_addr, ctx->res.resolved_address, sizeof(ctx->res.resolved_address));
-    double dns_lookup_time = compute_time_difference(before_dns);
-    printf("Dns lookup for %s took: %f\n", ctx->res.resolved_address, dns_lookup_time);
+    // struct timespec before_dns;
+    // clock_gettime(CLOCK_REALTIME, &before_dns);
+    // get_hostname_string_from_ip(ip_addr, ctx->res.resolved_address, sizeof(ctx->res.resolved_address));
+    // double dns_lookup_time = compute_time_difference(before_dns);
 
+
+
+    // printf("Dns lookup for %s took: %f\n", ctx->res.resolved_address, dns_lookup_time);
 
     // ft_strlcpy(ctx->res.resolved_address, ip_addr, sizeof(ip_addr)); //Debug line to skip dns lookup.
 
@@ -52,6 +54,8 @@ void handle_reply(ping_context_t *ctx) {
     //  is
     //  -> sometime it will be a success, if were ICMP, we read from the payload to get the time because were tryhards.
 
+    printf("the response has ICMP_DEST_UNREACH (3): ->%d, ICMP_PORT_UNREACH(3): -> %d\n", outer_icmp->type, outer_icmp->code);
+
     if (outer_icmp->type == ICMP_ECHOREPLY && ntohs(reply->header.un.echo.id) == (uint16_t)getpid() && use_icmp) {
         probe->time_rtt = compute_time_difference(*(struct timespec *)reply->payload);
         if (probe_idx.ttl < ctx->final_ttl_index) {
@@ -70,7 +74,7 @@ void handle_reply(ping_context_t *ctx) {
         struct timespec sent_time = ctx->probes[probe_idx.ttl][probe_idx.probe].sent_at;
         probe->time_rtt = compute_time_difference(sent_time);
     }
-    ft_strlcpy(probe->resolved_address, ctx->res.resolved_address, sizeof(probe->resolved_address));
+    // ft_strlcpy(probe->resolved_address, ctx->res.resolved_address, sizeof(probe->resolved_address));
     ft_strlcpy(probe->ip, ip_addr, sizeof(probe->ip));
 
     // This can probe and and will often be the oldest probe, but that should be handled in the timeout function.

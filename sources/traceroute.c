@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
     fd.fd = ctx.recv_sock;
 
     while (true) {
-        int err = poll(&fd, 1, 100);
+        int err = poll(&fd, 1, 1000);
         if (err < 0) {
             printf("traceroute: poll error\n");
             cleanup(&ctx);

@@ -8,16 +8,28 @@ void print_start_string(const ping_context_t *ctx) {
 
 void print_ttl_group(ping_context_t *ctx) {
     char curr_ip[INET_ADDRSTRLEN] = "";
+    char resolved_address[NI_MAXHOST];
 
     printf("%d ", ctx->curr_ttl_to_print + 1);
     for (uint8_t i = 0; i < ctx->options.max_probes_per_ttl; i++) {
         probe_record_t *cur = &ctx->probes[ctx->curr_ttl_to_print][i];
-        if (strcmp(cur->resolved_address, "* ") == 0) {
+        // printf("%s, ", cur->ip);
+        if (cur->status == TIMEOUT) { // strcmp(resolved_address, "TIMEOUT")
             printf("* ");
         } else if (strcmp(cur->ip, curr_ip) == 0) {
             printf("%0.3f ms ", cur->time_rtt);
         } else {
-            printf("%s %0.3f ms ", cur->resolved_address, cur->time_rtt);
+            // struct timespec before_dns;
+            // clock_gettime(CLOCK_REALTIME, &before_dns);
+            // get_hostname_string_from_ip(cur->ip, resolved_address, sizeof(resolved_address));
+            // double dns_lookup_time = compute_time_difference(before_dns);
+            // printf("Dns lookup for %s took: %f\n", ctx->res.resolved_address, dns_lookup_time);
+            // printf("%s %0.3f ms ", resolved_address, cur->time_rtt);
+
+            //DEBUG -> skips dns lookup entirely
+            (void) resolved_address;
+            printf("%s %0.3f ms ", cur->ip, cur->time_rtt);
+            //
             ft_strlcpy(curr_ip, cur->ip, sizeof(curr_ip));
         }
     }

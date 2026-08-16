@@ -55,7 +55,7 @@ typedef enum { PENDING, RESPONDED, TIMEOUT } probe_status;
 typedef struct {
     struct timespec sent_at;
     probe_status status;
-    char resolved_address[NI_MAXHOST];
+    // char resolved_address[NI_MAXHOST]; //in theory I dont need to store this ? I can just compute it when I want to print it, that saves a LOT of memory too :)
     double time_rtt;
     char ip[INET_ADDRSTRLEN];
 } probe_record_t;
@@ -82,6 +82,7 @@ typedef struct {
     struct addrinfo *destination_addrinfo;
     int send_sock;
     int recv_sock;
+    double time_lost_because_of_dns;
 } ping_context_t;
 
 // send
