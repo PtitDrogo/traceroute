@@ -42,34 +42,22 @@ void print_probe_struct(ping_context_t *ctx) {
 }
 
 uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i) {
-    uint8_t responded_probes = 0;
+    uint8_t freed = 0;
+    probe_index_t idx = *oldest_i;
 
-    probe_index_t idx = find_next_oldest_probe_index(*oldest_i, ctx->probes, &responded_probes, ctx->final_ttl_index,
-                                                     ctx->options.max_probes_per_ttl);
-    // if (responded_probes != 0) {
-    //     printf("Responded probe isnt 0 ! -> %d\n", responded_probes);
-    //     printf("oldest probe -> ttl : %d, probe_i : %d\n", idx.ttl, idx.probe);
-
-    // }
-    oldest_i->probe = idx.probe;
-    oldest_i->ttl = idx.ttl;
-    probe_record_t *oldest_probe = &ctx->probes[idx.ttl][idx.probe];
-
-    double time_since_sent_ms = compute_time_difference(oldest_probe->sent_at);
-
-    if (time_since_sent_ms <= 10000)
-        return responded_probes;
-    // If we are here, our probe is in PENDING and is past the timeout.
-    // So we change its status to Timeout and all the other vars.
-    oldest_probe->status = TIMEOUT;
-    oldest_probe->time_rtt = -1;
-    ft_strlcpy(oldest_probe->ip, "TIMEOUT", sizeof(oldest_probe->ip));
-
-    oldest_i->probe += 1;
-    if (oldest_i->probe == ctx->options.max_probes_per_ttl) {
-        oldest_i->probe = 0;
-        oldest_i->ttl += 1;
+    while (idx.ttl <= ctx->final_ttl_index) {
+        probe_record_t *p = &ctx->probes[idx.ttl][idx.probe];
+        if (p->status == PENDING) {
+            if (compute_time_difference(p->sent_at) <= 3000)
+                break; 
+            p->status = TIMEOUT;
+            p->time_rtt = -1;
+            ft_strlcpy(p->ip, "TIMEOUT", sizeof(p->ip));
+        }
+        freed++;
+        idx.probe++;
+        if (idx.probe == ctx->options.max_probes_per_ttl) { idx.probe = 0; idx.ttl++; }
     }
-    // printf("Oldest probe is increased by 1 because the current one is a timeout\n");
-    return responded_probes + 1;
+    *oldest_i = idx;
+    return freed;
 }

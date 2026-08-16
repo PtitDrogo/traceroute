@@ -29,8 +29,8 @@ int main(int argc, char *argv[]) {
     uint32_t send_i = 0;
     void *packet = ctx.options.use_icmp ? (void *)&icmp_packet : (void *)udp_payload;
     for (; send_i < ctx.options.max_probes_in_flight; send_i++) {
-        struct timespec pause = {.tv_sec = 0, .tv_nsec = 10 * 1000 * 1000 * 10}; // 10ms
-        nanosleep(&pause, NULL);
+        // struct timespec pause = {.tv_sec = 0, .tv_nsec = 10 * 1000 * 1000 * 10}; // 10ms
+        // nanosleep(&pause, NULL);
         send_protocol(send_i, &ctx, packet);
     }
 
@@ -52,8 +52,8 @@ int main(int argc, char *argv[]) {
         }
         uint8_t available_probe_slots = handle_responded_probes(&ctx, &oldest_i);
         for (uint8_t i = 0; i < available_probe_slots; i++) {
-            struct timespec pause = {.tv_sec = 0, .tv_nsec = 10 * 1000 * 1000 * 10}; // 10ms
-            nanosleep(&pause, NULL);
+            // struct timespec pause = {.tv_sec = 0, .tv_nsec = 10 * 1000 * 1000 * 10}; // 10ms
+            // nanosleep(&pause, NULL);
             send_protocol(send_i, &ctx, packet);
             send_i++;
         }

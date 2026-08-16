@@ -21,8 +21,6 @@ void handle_reply(ping_context_t *ctx) {
     // get_hostname_string_from_ip(ip_addr, ctx->res.resolved_address, sizeof(ctx->res.resolved_address));
     // double dns_lookup_time = compute_time_difference(before_dns);
 
-
-
     // printf("Dns lookup for %s took: %f\n", ctx->res.resolved_address, dns_lookup_time);
 
     // ft_strlcpy(ctx->res.resolved_address, ip_addr, sizeof(ip_addr)); //Debug line to skip dns lookup.
@@ -41,6 +39,7 @@ void handle_reply(ping_context_t *ctx) {
 
     uint16_t seq = ntohs(use_icmp ? reply->header.un.echo.sequence : reply_udp->dest);
     probe_index_t probe_idx = get_decoded_probe_index(seq, use_icmp);
+    //Technically speaking we could get really unlucky and receive a random ping here and it crashes our shit.
     probe_record_t *probe = &ctx->probes[probe_idx.ttl][probe_idx.probe];
 
     // printf("recv: type=%d code=%d port=%d -> ttl=%d probe=%d status=%d\n", outer_icmp->type, outer_icmp->code, seq,
@@ -54,7 +53,8 @@ void handle_reply(ping_context_t *ctx) {
     //  is
     //  -> sometime it will be a success, if were ICMP, we read from the payload to get the time because were tryhards.
 
-    printf("the response has ICMP_DEST_UNREACH (3): ->%d, ICMP_PORT_UNREACH(3): -> %d\n", outer_icmp->type, outer_icmp->code);
+    printf("the response has ICMP_DEST_UNREACH (3): ->%d, ICMP_PORT_UNREACH(3): -> %d\n", outer_icmp->type,
+           outer_icmp->code);
 
     if (outer_icmp->type == ICMP_ECHOREPLY && ntohs(reply->header.un.echo.id) == (uint16_t)getpid() && use_icmp) {
         probe->time_rtt = compute_time_difference(*(struct timespec *)reply->payload);
@@ -73,6 +73,8 @@ void handle_reply(ping_context_t *ctx) {
     } else if (outer_icmp->type == ICMP_TIME_EXCEEDED) {
         struct timespec sent_time = ctx->probes[probe_idx.ttl][probe_idx.probe].sent_at;
         probe->time_rtt = compute_time_difference(sent_time);
+    } else {
+        return; //Unrelated packet, we do not touch.
     }
     // ft_strlcpy(probe->resolved_address, ctx->res.resolved_address, sizeof(probe->resolved_address));
     ft_strlcpy(probe->ip, ip_addr, sizeof(probe->ip));
