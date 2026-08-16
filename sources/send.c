@@ -142,5 +142,6 @@ void send_protocol(uint8_t send_i, ping_context_t *ctx, void *packet) {
     send_packet(packet, ctx);
     // printf("i ttl: %d, i probe: %d\n", index.ttl, index.probe);
     clock_gettime(CLOCK_REALTIME, &ctx->probes[index.ttl][index.probe].sent_at);
+    ctx->probes[index.ttl][index.probe].status = PENDING;
     // printf("Launched at %ld\n", ctx->probes[index.ttl][index.probe].sent_at.tv_sec);
 }

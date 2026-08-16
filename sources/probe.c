@@ -48,7 +48,7 @@ uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i) {
     while (idx.ttl <= ctx->final_ttl_index) {
         probe_record_t *p = &ctx->probes[idx.ttl][idx.probe];
         if (p->status == PENDING) {
-            if (compute_time_difference(p->sent_at) <= 3000)
+            if (compute_time_difference(p->sent_at) <= 1000)
                 break; 
             p->status = TIMEOUT;
             p->time_rtt = -1;

@@ -50,7 +50,7 @@ typedef struct {
     char resolved_address[NI_MAXHOST];
 } response_data_t;
 
-typedef enum { PENDING, RESPONDED, TIMEOUT } probe_status;
+typedef enum { NOT_SENT, PENDING, RESPONDED, TIMEOUT } probe_status;
 
 typedef struct {
     struct timespec sent_at;
