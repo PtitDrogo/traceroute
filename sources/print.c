@@ -13,6 +13,13 @@ void print_ttl_group(ping_context_t *ctx) {
     printf("%d ", ctx->curr_ttl_to_print + 1);
     for (uint8_t i = 0; i < ctx->options.max_probes_per_ttl; i++) {
         probe_record_t *cur = &ctx->probes[ctx->curr_ttl_to_print][i];
+
+        // printf("\nDebugging\n");
+        // char resolved_address_debug[NI_MAXHOST];
+        // get_hostname_string_from_ip(cur->ip, resolved_address_debug, sizeof(resolved_address_debug));
+        // printf("%s %0.3f ms ", resolved_address, cur->time_rtt);
+        // printf("Debugging end\n");
+
         // printf("%s, ", cur->ip);
         if (cur->status == TIMEOUT) { // strcmp(resolved_address, "TIMEOUT")
             printf("* ");
@@ -22,12 +29,12 @@ void print_ttl_group(ping_context_t *ctx) {
             // struct timespec before_dns;
             // clock_gettime(CLOCK_REALTIME, &before_dns);
 
-            //This will slow down the perceived rtt, ideally it should be async, but the added complexity might
-            //not be worth it for a school project
+            // This will slow down the perceived rtt, ideally it should be async, but the added complexity might
+            // not be worth it for a school project
             get_hostname_string_from_ip(cur->ip, resolved_address, sizeof(resolved_address));
+            printf("%s %0.3f ms ", resolved_address, cur->time_rtt);
             // double dns_lookup_time = compute_time_difference(before_dns);
             // printf("Dns lookup for %s took: %f\n", ctx->res.resolved_address, dns_lookup_time);
-            printf("%s %0.3f ms ", resolved_address, cur->time_rtt);
 
             // DEBUG -> skips dns lookup entirely
             // (void)resolved_address;

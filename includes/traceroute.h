@@ -27,7 +27,7 @@
 #define MAX_TTL 255 // If youre human youll probably just heap allocate this later using the param given by the user
 #define MAX_PROBES 10
 #define DEFAULT_IN_FLIGHT_PROBES 16
-#define TIMEOUT_TIME_MS 1000
+#define TIMEOUT_TIME_MS 3000
 
 #define HELP_STRING                                                                                                    \
     "Usage\n"                                                                                                          \

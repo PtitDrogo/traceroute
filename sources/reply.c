@@ -17,12 +17,12 @@ void handle_reply(ping_context_t *ctx) {
         exit(1);
     }
     char *ip_addr = inet_ntoa(response_in.sin_addr);
-    // struct timespec before_dns;
-    // clock_gettime(CLOCK_REALTIME, &before_dns);
-    // get_hostname_string_from_ip(ip_addr, ctx->res.resolved_address, sizeof(ctx->res.resolved_address));
-    // double dns_lookup_time = compute_time_difference(before_dns);
+    struct timespec before_dns;
+    clock_gettime(CLOCK_REALTIME, &before_dns);
+    get_hostname_string_from_ip(ip_addr, ctx->res.resolved_address, sizeof(ctx->res.resolved_address));
+    double dns_lookup_time = compute_time_difference(before_dns);
 
-    // printf("Dns lookup for %s took: %f\n", ctx->res.resolved_address, dns_lookup_time);
+    printf("Dns lookup for %s took: %f\n", ctx->res.resolved_address, dns_lookup_time);
 
     // ft_strlcpy(ctx->res.resolved_address, ip_addr, sizeof(ip_addr)); //Debug line to skip dns lookup.
 
@@ -45,13 +45,13 @@ void handle_reply(ping_context_t *ctx) {
         probe_idx.ttl = get_sender_ttl(response) - 1;
         probe_idx.probe = ntohs(reply_udp->dest) - BASE_UDP_PORT;
     }
-    // printf("ttl %d, probe %d\n", probe_idx.ttl, probe_idx.probe);
+    printf("ttl %d, probe %d\n", probe_idx.ttl + 1, probe_idx.probe);
     // probe_index_t probe_idxl;
     // Technically speaking we could get really unlucky and receive a random ping here and it crashes our shit.
     probe_record_t *probe = &ctx->probes[probe_idx.ttl][probe_idx.probe];
 
-    // printf("recv: type=%d code=%d port=%d -> ttl=%d probe=%d status=%d\n", outer_icmp->type, outer_icmp->code, seq,
-    //        probe_idx.ttl, probe_idx.probe, ctx->probes[probe_idx.ttl][probe_idx.probe].status);
+    printf("recv: type=%d code=%d port=%d -> ttl=%d probe=%d status=%d\n", outer_icmp->type, outer_icmp->code, seq,
+           probe_idx.ttl, probe_idx.probe, ctx->probes[probe_idx.ttl][probe_idx.probe].status);
 
     if (probe->status == TIMEOUT)
         return; // This is a ping that we got too late, we ignore it !

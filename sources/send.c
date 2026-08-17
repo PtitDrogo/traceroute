@@ -138,10 +138,11 @@ void send_protocol(uint8_t send_i, ping_context_t *ctx, void *packet) {
     probe_index_t index = {.ttl = send_i / ctx->options.max_probes_per_ttl,
                            .probe = send_i % ctx->options.max_probes_per_ttl};
 
+    printf("Updating socket to have ttl %d\n", index.ttl + 1);
     update_socket(ctx, index.ttl + 1);
     update_packet(packet, index, ctx);
     send_packet(packet, ctx);
-    // printf("i ttl: %d, i probe: %d\n", index.ttl, index.probe);
+    printf("i ttl: %d, i probe: %d\n", index.ttl, index.probe);
     clock_gettime(CLOCK_REALTIME, &ctx->probes[index.ttl][index.probe].sent_at);
     ctx->probes[index.ttl][index.probe].status = PENDING;
     // printf("Launched at %ld\n", ctx->probes[index.ttl][index.probe].sent_at.tv_sec);
