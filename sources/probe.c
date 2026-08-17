@@ -1,34 +1,13 @@
 #include "../includes/traceroute.h"
 
-probe_index_t get_decoded_probe_index(uint16_t encoded, bool use_icmp) {
+//Only use for ICMP :)
+probe_index_t get_decoded_probe_index_from_seq(uint16_t encoded) {
     probe_index_t idx = {0};
-    idx.ttl = (encoded - (BASE_UDP_PORT * !use_icmp)) / 10;
-    idx.probe = (encoded - (BASE_UDP_PORT * !use_icmp)) % 10;
+    idx.ttl = (encoded) / 10;
+    idx.probe = (encoded) % 10;
     return idx;
 }
 
-// Return the index of the first next instance of pending probe
-// if the probe you give it is the oldest, it will just return that.
-// Increases count by one for every row walked.
-probe_index_t find_next_oldest_probe_index(probe_index_t cur, probe_record_t probes[MAX_TTL][MAX_PROBES],
-                                           uint8_t *count, uint8_t max_ttl_index, uint8_t max_probes_per_ttl) {
-    probe_index_t res;
-
-    for (uint8_t ttl = cur.ttl; ttl <= max_ttl_index; ttl++) {
-        for (uint8_t probe = cur.probe; probe < max_probes_per_ttl; probe++) {
-            if (probes[ttl][probe].status == PENDING) {
-                res.ttl = ttl;
-                res.probe = probe;
-                return res;
-            }
-            *count += 1;
-        }
-        cur.probe = 0;
-    }
-    res.probe = max_probes_per_ttl;
-    res.ttl = max_ttl_index;
-    return res;
-};
 
 void print_probe_struct(ping_context_t *ctx) {
     static const char *status_names[] = {"PENDING", "RESPONDED", "TIMEOUT"};
@@ -50,7 +29,7 @@ uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i) {
         if (p->status == NOT_SENT)
             break;
         if (p->status == PENDING) {
-            if (compute_time_difference(p->sent_at) <= 3000)
+            if (compute_time_difference(p->sent_at) <= TIMEOUT_TIME_MS)
                 break;
             p->status = TIMEOUT;
             p->time_rtt = -1;

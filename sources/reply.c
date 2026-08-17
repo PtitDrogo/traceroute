@@ -2,6 +2,7 @@
 
 static void parse_icmp_reply(char *response, struct icmphdr **outer_icmp, icmp_packet_t **reply);
 static void parse_udp_reply(char *response, struct icmphdr **outer_icmp, struct udphdr **reply_udp);
+static uint8_t get_sender_ttl(char *response);
 
 void handle_reply(ping_context_t *ctx) {
     struct sockaddr_in response_in;
@@ -38,14 +39,19 @@ void handle_reply(ping_context_t *ctx) {
     // All I want is the sequence number of the response
 
     uint16_t seq = ntohs(use_icmp ? reply->header.un.echo.sequence : reply_udp->dest);
-    probe_index_t probe_idx = get_decoded_probe_index(seq, use_icmp);
+    // uint16_t seqtest = reply->header.un.echo.sequence;
+    probe_index_t probe_idx = get_decoded_probe_index_from_seq(seq);
+    if (!ctx->options.use_icmp) {
+        probe_idx.ttl = get_sender_ttl(response) - 1;
+        probe_idx.probe = ntohs(reply_udp->dest) - BASE_UDP_PORT;
+    }
+    // printf("ttl %d, probe %d\n", probe_idx.ttl, probe_idx.probe);
+    // probe_index_t probe_idxl;
     // Technically speaking we could get really unlucky and receive a random ping here and it crashes our shit.
     probe_record_t *probe = &ctx->probes[probe_idx.ttl][probe_idx.probe];
 
     // printf("recv: type=%d code=%d port=%d -> ttl=%d probe=%d status=%d\n", outer_icmp->type, outer_icmp->code, seq,
     //        probe_idx.ttl, probe_idx.probe, ctx->probes[probe_idx.ttl][probe_idx.probe].status);
-    printf("the response has ICMP_DEST_UNREACH (3): ->%d, ICMP_PORT_UNREACH(3): -> %d\n", outer_icmp->type,
-           outer_icmp->code);
 
     if (probe->status == TIMEOUT)
         return; // This is a ping that we got too late, we ignore it !
@@ -109,6 +115,13 @@ static void parse_udp_reply(char *response, struct icmphdr **outer_icmp, struct 
     struct iphdr *inner_ip = (struct iphdr *)(response + ip_hdr_len + sizeof(struct icmphdr));
     int inner_ip_hdr_len = inner_ip->ihl * 4;
     *reply_udp = (struct udphdr *)((char *)inner_ip + inner_ip_hdr_len);
+}
+
+static uint8_t get_sender_ttl(char *response) {
+    struct iphdr *ip = (struct iphdr *)response;
+    int ip_hdr_len = ip->ihl * 4;
+    struct iphdr *inner_ip = (struct iphdr *)(response + ip_hdr_len + sizeof(struct icmphdr));
+    return inner_ip->ttl;
 }
 
 // Gets to the end of ip header, cast this to whatever type you think you have.

@@ -24,9 +24,10 @@
 #define PAYLOAD_SIZE 56
 #define DEFAULT_TTL 30
 #define DEFAULT_PROBE 3
-#define MAX_TTL 100 //If youre human youll probably just heap allocate this later using the param given by the user
+#define MAX_TTL 255 // If youre human youll probably just heap allocate this later using the param given by the user
 #define MAX_PROBES 10
 #define DEFAULT_IN_FLIGHT_PROBES 16
+#define TIMEOUT_TIME_MS 1000
 
 #define HELP_STRING                                                                                                    \
     "Usage\n"                                                                                                          \
@@ -55,7 +56,8 @@ typedef enum { NOT_SENT, PENDING, RESPONDED, TIMEOUT } probe_status;
 typedef struct {
     struct timespec sent_at;
     probe_status status;
-    // char resolved_address[NI_MAXHOST]; //in theory I dont need to store this ? I can just compute it when I want to print it, that saves a LOT of memory too :)
+    // char resolved_address[NI_MAXHOST]; //in theory I dont need to store this ? I can just compute it when I want to
+    // print it, that saves a LOT of memory too :)
     double time_rtt;
     char ip[INET_ADDRSTRLEN];
 } probe_record_t;
@@ -118,7 +120,7 @@ void print_ready_ttl_groups(ping_context_t *ctx);
 
 // probe
 uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i);
-probe_index_t get_decoded_probe_index(uint16_t encoded, bool use_icmp);
+probe_index_t get_decoded_probe_index_from_seq(uint16_t encoded);
 void print_probe_struct(ping_context_t *ctx);
 
 #endif
