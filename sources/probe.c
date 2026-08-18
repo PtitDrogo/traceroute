@@ -1,13 +1,12 @@
 #include "../includes/traceroute.h"
 
-//Only use for ICMP :)
+// Only use for ICMP :)
 probe_index_t get_decoded_probe_index_from_seq(uint16_t encoded) {
     probe_index_t idx = {0};
     idx.ttl = (encoded) / 10;
     idx.probe = (encoded) % 10;
     return idx;
 }
-
 
 void print_probe_struct(ping_context_t *ctx) {
     static const char *status_names[] = {"PENDING", "RESPONDED", "TIMEOUT"};
@@ -29,7 +28,10 @@ uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i) {
         if (p->status == NOT_SENT)
             break;
         if (p->status == PENDING) {
-            if (compute_time_difference(p->sent_at) <= TIMEOUT_TIME_MS)
+            double time_slept_ms = ctx->time_slept_ms - p->time_slept_when_sent_ms;
+            double time_lost_by_dns_ms = ctx->time_lost_by_dns - p->time_lost_by_dns_when_sent_ms;
+
+            if (compute_time_difference(p->sent_at) <= TIMEOUT_TIME_MS + time_slept_ms + (time_lost_by_dns_ms / 2))
                 break;
             p->status = TIMEOUT;
             p->time_rtt = -1;
