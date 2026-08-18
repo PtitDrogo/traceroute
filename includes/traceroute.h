@@ -28,13 +28,30 @@
 #define MAX_PROBES 10
 #define DEFAULT_IN_FLIGHT_PROBES 16
 #define TIMEOUT_TIME_MS 1000
+#define SLEEP_TIME_NSEC 1000 * 1000 * 10
 
 #define HELP_STRING                                                                                                    \
     "Usage\n"                                                                                                          \
-    "  ft_route [options] <destination>\n"                                                                             \
+    "ft_traceroute traceroute [ -I ] [ -f first_ttl ]  [ -m max_ttl ] [ -N squeries ] [ -q nqueries ]  [ -z "          \
+    "sendwait ]  host \n"                                                                                              \
     "Options:\n"                                                                                                       \
-    "  <destination>      DNS name or IP address\n"                                                                    \
-    "  -V                 print version and exit\n"
+    "  -f first_ttl\n"                                                                                                   \
+    "           Start from the first_ttl hop(instead of 1)\n"                                                            \
+    "  -I                   Use ICMP ECHO for tracerouting\n"                                                            \
+    "  -m max_ttl\n"                                                                                                   \
+    "           Set the max number of hops (max TTL to be\n"                                                           \
+    "           reached). Default is 30\n"                                                                             \
+    "  -q nqueries\n"                                                                                                  \
+    "           Set the max number of hops (max TTL to be\n"                                                           \
+    "           reached). Default is 30\n"                                                                             \
+    "  -z sendwait\n"                                                                                                  \
+    "           Minimal time interval between probes (default 0).\n"                                                   \
+    "           If the value is more than 10, then it specifies a\n"                                                   \
+    "           number in milliseconds, else it is a number of\n"                                                      \
+    "           seconds (float point values allowed too)\n"                                                            \
+    "  -V                   print version and exit\n"                                                                  \
+    "Arguments:\n"                                                                                                     \
+    "+     host          The host to traceroute to\n"
 
 // Contains the icmp header and the payload
 typedef struct {
@@ -107,7 +124,6 @@ void handle_reply(ping_context_t *ctx);
 // helpers
 void cleanup(ping_context_t *ctx);
 void get_hostname_string_from_ip(const char *ip_str, char *dest_buf, size_t buf_len);
-double compute_time_difference(const struct timespec past_time);
 size_t ft_strlcpy(char *dst, const char *src, size_t dsize);
 
 // parsing
@@ -126,5 +142,9 @@ void print_ready_ttl_groups(ping_context_t *ctx);
 uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i);
 probe_index_t get_decoded_probe_index_from_seq(uint16_t encoded);
 void print_probe_struct(ping_context_t *ctx);
+
+// timers
+double compute_time_difference(const struct timespec past_time);
+double sleep_and_measure(long time_to_sleep_nsec);
 
 #endif

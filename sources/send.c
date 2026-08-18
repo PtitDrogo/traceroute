@@ -17,17 +17,6 @@ void get_hostname_string_from_ip(const char *ip_str, char *dest_buf, size_t buf_
     return;
 }
 
-// returns the time difference between the given timespec and now.
-double compute_time_difference(struct timespec past_time) {
-    struct timespec end_time;
-    clock_gettime(CLOCK_REALTIME, &end_time);
-
-    const struct timespec start_time = past_time;
-
-    double rtt = (end_time.tv_sec - start_time.tv_sec) * 1000.0 + (end_time.tv_nsec - start_time.tv_nsec) / 1000000.0;
-    return rtt;
-}
-
 icmp_packet_t build_icmp_packet() {
     icmp_packet_t icmp_packet = {.header.type = ICMP_ECHO,
                                  .header.code = 0,
