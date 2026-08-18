@@ -45,7 +45,7 @@ void handle_reply(ping_context_t *ctx) {
         probe_idx.ttl = get_sender_ttl(response) - 1;
         probe_idx.probe = ntohs(reply_udp->dest) - BASE_UDP_PORT;
     }
-    printf("ttl %d, probe %d\n", probe_idx.ttl + 1, probe_idx.probe);
+    // printf("ttl %d, probe %d\n", probe_idx.ttl + 1, probe_idx.probe);
     // probe_index_t probe_idxl;
     // Technically speaking we could get really unlucky and receive a random ping here and it crashes our shit.
     probe_record_t *probe = &ctx->probes[probe_idx.ttl][probe_idx.probe];
