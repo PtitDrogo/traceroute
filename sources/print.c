@@ -26,15 +26,20 @@ void print_ttl_group(ping_context_t *ctx) {
         } else if (strcmp(cur->ip, curr_ip) == 0) {
             printf("%0.3f ms ", cur->time_rtt);
         } else {
-            // struct timespec before_dns;
-            // clock_gettime(CLOCK_REALTIME, &before_dns);
+            struct timespec start, end;
 
+            clock_gettime(CLOCK_MONOTONIC, &start);
+
+            get_hostname_string_from_ip(cur->ip, resolved_address, sizeof(resolved_address));
+
+            clock_gettime(CLOCK_MONOTONIC, &end);
+
+            double dns_lookup_time_ms = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_nsec - start.tv_nsec) / 1000000.0;
+            ctx->time_lost_by_dns += dns_lookup_time_ms;
             // This will slow down the perceived rtt, ideally it should be async, but the added complexity might
             // not be worth it for a school project
-            get_hostname_string_from_ip(cur->ip, resolved_address, sizeof(resolved_address));
             printf("%s %0.3f ms ", resolved_address, cur->time_rtt);
-            // double dns_lookup_time = compute_time_difference(before_dns);
-            // printf("Dns lookup for %s took: %f\n", ctx->res.resolved_address, dns_lookup_time);
+            // printf("\nDns lookup for %s took: %f\n", ctx->res.resolved_address, dns_lookup_time);
 
             // DEBUG -> skips dns lookup entirely
             // (void)resolved_address;

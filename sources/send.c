@@ -90,7 +90,8 @@ void send_packet(void *packet, ping_context_t *ctx) {
     //     char ip_str[INET6_ADDRSTRLEN] = {0};
     //     char serv_str[NI_MAXSERV] = {0};
 
-    //     getnameinfo(ctx->destination_addrinfo->ai_addr, ctx->destination_addrinfo->ai_addrlen, ip_str, sizeof(ip_str),
+    //     getnameinfo(ctx->destination_addrinfo->ai_addr, ctx->destination_addrinfo->ai_addrlen, ip_str,
+    //     sizeof(ip_str),
     //                 serv_str, sizeof(serv_str), NI_NUMERICHOST | NI_NUMERICSERV);
 
     //     // 2. Print high-level sendto metadata
@@ -101,7 +102,8 @@ void send_packet(void *packet, ping_context_t *ctx) {
     //            "    dest_addr    = %s:%s\n"
     //            "    dest_addrlen = %u\n"
     //            ")\n",
-    //            ctx->send_sock, packet_size, 0, ip_str, serv_str, (unsigned int)ctx->destination_addrinfo->ai_addrlen);
+    //            ctx->send_sock, packet_size, 0, ip_str, serv_str, (unsigned
+    //            int)ctx->destination_addrinfo->ai_addrlen);
 
     //     // 3. Print the raw hex content of the packet buffer
     //     printf("Buffer Content (Hex):\n    ");
@@ -138,12 +140,14 @@ void send_protocol(uint8_t send_i, ping_context_t *ctx, void *packet) {
     probe_index_t index = {.ttl = send_i / ctx->options.max_probes_per_ttl,
                            .probe = send_i % ctx->options.max_probes_per_ttl};
 
-    printf("Updating socket to have ttl %d\n", index.ttl + 1);
+    // printf("Updating socket to have ttl %d\n", index.ttl + 1);
     update_socket(ctx, index.ttl + 1);
     update_packet(packet, index, ctx);
     send_packet(packet, ctx);
-    printf("i ttl: %d, i probe: %d\n", index.ttl, index.probe);
+    // printf("i ttl: %d, i probe: %d\n", index.ttl, index.probe);
     clock_gettime(CLOCK_REALTIME, &ctx->probes[index.ttl][index.probe].sent_at);
     ctx->probes[index.ttl][index.probe].status = PENDING;
+    ctx->probes[index.ttl][index.probe].time_slept_when_sent_ms = ctx->time_slept_ms;
+    ctx->probes[index.ttl][index.probe].time_lost_by_dns_when_sent_ms = ctx->time_lost_by_dns;
     // printf("Launched at %ld\n", ctx->probes[index.ttl][index.probe].sent_at.tv_sec);
 }

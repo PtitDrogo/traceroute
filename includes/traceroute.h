@@ -27,7 +27,7 @@
 #define MAX_TTL 255 // If youre human youll probably just heap allocate this later using the param given by the user
 #define MAX_PROBES 10
 #define DEFAULT_IN_FLIGHT_PROBES 16
-#define TIMEOUT_TIME_MS 3000
+#define TIMEOUT_TIME_MS 1000
 
 #define HELP_STRING                                                                                                    \
     "Usage\n"                                                                                                          \
@@ -55,11 +55,14 @@ typedef enum { NOT_SENT, PENDING, RESPONDED, TIMEOUT } probe_status;
 
 typedef struct {
     struct timespec sent_at;
+    double time_slept_when_sent_ms;
+    double time_lost_by_dns_when_sent_ms;
     probe_status status;
     // char resolved_address[NI_MAXHOST]; //in theory I dont need to store this ? I can just compute it when I want to
     // print it, that saves a LOT of memory too :)
     double time_rtt;
     char ip[INET_ADDRSTRLEN];
+
 } probe_record_t;
 
 typedef struct {
@@ -84,7 +87,8 @@ typedef struct {
     struct addrinfo *destination_addrinfo;
     int send_sock;
     int recv_sock;
-    double time_lost_because_of_dns;
+    double time_lost_by_dns;
+    double time_slept_ms;
 } ping_context_t;
 
 // send

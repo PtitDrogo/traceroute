@@ -29,8 +29,18 @@ int main(int argc, char *argv[]) {
     uint32_t send_i = 0;
     void *packet = ctx.options.use_icmp ? (void *)&icmp_packet : (void *)udp_payload;
     for (; send_i < ctx.options.max_probes_in_flight; send_i++) {
-        struct timespec pause = {.tv_sec = 0, .tv_nsec = 1000 * 1000 * 30}; // 0.1ms
+        struct timespec pause = {.tv_sec = 0, .tv_nsec = 1000 * 1000 * 20}; // 0.1ms 10 000 000
+        struct timespec start, end;
+
+        clock_gettime(CLOCK_MONOTONIC, &start);
+
         nanosleep(&pause, NULL);
+
+        clock_gettime(CLOCK_MONOTONIC, &end);
+
+        double slept_ms = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_nsec - start.tv_nsec) / 1000000.0;
+
+        ctx.time_slept_ms += slept_ms;
         send_protocol(send_i, &ctx, packet);
     }
 
@@ -41,7 +51,7 @@ int main(int argc, char *argv[]) {
     fd.fd = ctx.recv_sock;
 
     while (true) {
-        int err = poll(&fd, 1, 1000);
+        int err = poll(&fd, 1, 100);
         if (err < 0) {
             printf("traceroute: poll error\n");
             cleanup(&ctx);
@@ -52,8 +62,18 @@ int main(int argc, char *argv[]) {
         }
         uint8_t available_probe_slots = handle_responded_probes(&ctx, &oldest_i);
         for (uint8_t i = 0; i < available_probe_slots; i++) {
-            struct timespec pause = {.tv_sec = 0, .tv_nsec = 1000 * 1000 * 30}; // 0.1 ms
+            struct timespec pause = {.tv_sec = 0, .tv_nsec = 1000 * 1000 * 20}; // 0.1 ms
+            struct timespec start, end;
+
+            clock_gettime(CLOCK_MONOTONIC, &start);
+
             nanosleep(&pause, NULL);
+
+            clock_gettime(CLOCK_MONOTONIC, &end);
+
+            double slept_ms = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_nsec - start.tv_nsec) / 1000000.0;
+
+            ctx.time_slept_ms += slept_ms;
             send_protocol(send_i, &ctx, packet);
             send_i++;
         }
