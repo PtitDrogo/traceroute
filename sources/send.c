@@ -63,7 +63,7 @@ void update_packet(void *packet, probe_index_t index, ping_context_t *ctx) {
         char *udp_payload = (char *)packet;
         struct sockaddr_in *dest = (struct sockaddr_in *)ctx->destination_addrinfo->ai_addr;
         clock_gettime(CLOCK_REALTIME, (struct timespec *)udp_payload);
-        dest->sin_port = htons(BASE_UDP_PORT + index.probe);
+        dest->sin_port = htons(BASE_UDP_PORT + index.ttl * ctx->options.max_probes_per_ttl + index.probe);
         // printf("port used is %d\n", BASE_UDP_PORT + index.probe);
     }
 }

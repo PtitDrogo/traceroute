@@ -2,7 +2,7 @@
 
 static void parse_icmp_reply(char *response, struct icmphdr **outer_icmp, icmp_packet_t **reply);
 static void parse_udp_reply(char *response, struct icmphdr **outer_icmp, struct udphdr **reply_udp);
-static uint8_t get_sender_ttl(char *response);
+// static uint8_t get_sender_ttl(char *response);
 
 void handle_reply(ping_context_t *ctx) {
     struct sockaddr_in response_in;
@@ -42,8 +42,8 @@ void handle_reply(ping_context_t *ctx) {
     // uint16_t seqtest = reply->header.un.echo.sequence;
     probe_index_t probe_idx = get_decoded_probe_index_from_seq(seq);
     if (!ctx->options.use_icmp) {
-        probe_idx.ttl = get_sender_ttl(response) - 1;
-        probe_idx.probe = ntohs(reply_udp->dest) - BASE_UDP_PORT;
+        probe_idx.ttl = (ntohs(reply_udp->dest) - BASE_UDP_PORT) / ctx->options.max_probes_per_ttl;
+        probe_idx.probe = (ntohs(reply_udp->dest) - BASE_UDP_PORT) % ctx->options.max_probes_per_ttl;
     }
     // printf("ttl %d, probe %d\n", probe_idx.ttl + 1, probe_idx.probe);
     // probe_index_t probe_idxl;
@@ -121,12 +121,12 @@ static void parse_udp_reply(char *response, struct icmphdr **outer_icmp, struct 
     *reply_udp = (struct udphdr *)((char *)inner_ip + inner_ip_hdr_len);
 }
 
-static uint8_t get_sender_ttl(char *response) {
-    struct iphdr *ip = (struct iphdr *)response;
-    int ip_hdr_len = ip->ihl * 4;
-    struct iphdr *inner_ip = (struct iphdr *)(response + ip_hdr_len + sizeof(struct icmphdr));
-    return inner_ip->ttl;
-}
+// static uint8_t get_sender_ttl(char *response) {
+//     struct iphdr *ip = (struct iphdr *)response;
+//     int ip_hdr_len = ip->ihl * 4;
+//     struct iphdr *inner_ip = (struct iphdr *)(response + ip_hdr_len + sizeof(struct icmphdr));
+//     return inner_ip->ttl;
+// }
 
 // Gets to the end of ip header, cast this to whatever type you think you have.
 // static void *get_end_of_ip_header(char *response) {
