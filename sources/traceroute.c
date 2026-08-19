@@ -26,9 +26,9 @@ int main(int argc, char *argv[]) {
     char udp_payload[PAYLOAD_SIZE] = {0};
 
     print_start_string(&ctx);
-    uint32_t send_i = 0;
+    uint32_t send_i = ctx.options.first_ttl - 1;
     void *packet = ctx.options.use_icmp ? (void *)&icmp_packet : (void *)udp_payload;
-    for (; send_i < ctx.options.max_probes_in_flight; send_i++) {
+    for (; send_i < ctx.options.max_probes_in_flight + ctx.options.first_ttl; send_i++) {
         send_protocol(send_i, &ctx, packet);
         ctx.time_slept_ms += sleep_and_measure(ctx.options.time_to_sleep_ms);
     }

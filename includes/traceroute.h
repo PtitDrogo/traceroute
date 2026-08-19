@@ -40,9 +40,10 @@
     "  -m max_ttl\n"                                                                                                   \
     "           Set the max number of hops (max TTL to be\n"                                                           \
     "           reached). Default is 30\n"                                                                             \
+    "  -n       Do not resolve IP addresses to their domain names\n"                                                   \
     "  -q nqueries\n"                                                                                                  \
-    "           Set the max number of hops (max TTL to be\n"                                                           \
-    "           reached). Default is 30\n"                                                                             \
+    "           Set the number of probes per each hop. Default is\n"                                                   \
+    "           3\n"                                                                                                   \
     "  -z sendwait\n"                                                                                                  \
     "           Minimal time interval between probes (default 10 ms).\n"                                               \
     "           If the value is more than 10, then it specifies a\n"                                                   \
@@ -87,6 +88,7 @@ typedef struct {
     bool use_icmp;
     double time_to_sleep_ms;
     uint8_t first_ttl;
+    bool skip_dns;
 } options_t;
 
 typedef struct {

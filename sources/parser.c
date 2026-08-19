@@ -7,12 +7,20 @@
 
 void parse_flags(ping_context_t *ctx, int argc, char *argv[]) {
     int32_t opt;
-    const char *optstring = ":hVm:q:IN:z:";
+    const char *optstring = ":hVm:q:IN:z:nf:";
 
     while ((opt = getopt(argc, argv, optstring)) != -1) {
         switch (opt) {
+        case 'n':
+            ctx->options.skip_dns = true;
+            break;
         case 'f':
-            ctx->options.max_probes_in_flight = (uint32_t)parse_num(ctx, INT32_MAX, 'N');
+            ctx->options.first_ttl = (uint8_t)parse_num(ctx, UINT8_MAX, 'f');
+            if (ctx->options.first_ttl <= 0) {
+                fprintf(stderr, "first hop out of range\n");
+                cleanup(ctx);
+                exit(1);
+            }
             break;
         case 'N':
             ctx->options.max_probes_in_flight = (uint32_t)parse_num(ctx, INT32_MAX, 'N');
@@ -20,9 +28,9 @@ void parse_flags(ping_context_t *ctx, int argc, char *argv[]) {
         case 'z':
             ctx->options.time_to_sleep_ms = parse_float(ctx, INT32_MAX, 'z');
             if (ctx->options.time_to_sleep_ms <= 10) {
-               ctx->options.time_to_sleep_ms *= 1000; 
+                ctx->options.time_to_sleep_ms *= 1000;
             }
-            printf("%f option",ctx->options.time_to_sleep_ms);
+            printf("%f option", ctx->options.time_to_sleep_ms);
             break;
         case 'I':
             ctx->options.use_icmp = true;
@@ -66,7 +74,8 @@ void parse_flags(ping_context_t *ctx, int argc, char *argv[]) {
 
     ctx->arg_address = argv[optind];
     uint32_t max_theorical_probes = (ctx->final_ttl_index + 1) * ctx->options.max_probes_per_ttl;
-    ctx->options.max_probes_in_flight = (uint32_t) fmin(ctx->options.max_probes_in_flight, fmin(max_theorical_probes, 255));
+    ctx->options.max_probes_in_flight =
+        (uint32_t)fmin(ctx->options.max_probes_in_flight, fmin(max_theorical_probes, 255));
     return;
 }
 
@@ -86,7 +95,6 @@ long parse_num(ping_context_t *ctx, uint32_t max_range, char opt_char) {
     }
     return val;
 }
-
 
 double parse_float(ping_context_t *ctx, uint32_t max_range, char opt_char) {
     char *endptr;
