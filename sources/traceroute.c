@@ -4,7 +4,7 @@ static void init(tr_context_t *ctx);
 
 int main(int argc, char *argv[]) {
     if (geteuid() != 0) {
-        printf("ping: sudo rights are required, exiting.\n");
+        printf("traceroute: sudo rights are required, exiting.\n");
         return EXIT_FAILURE;
     }
     tr_context_t ctx = {0};
@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     create_socket(&ctx);
     int err = getaddrinfo(ctx.arg_address, NULL, &hints, &ctx.destination_addrinfo);
     if (err != 0) {
-        fprintf(stderr, "ping: %s: Name or service not known\n", ctx.arg_address);
+        fprintf(stderr, "traceroute: %s: Name or service not known\n", ctx.arg_address);
         cleanup(&ctx);
         return 1;
     }

@@ -23,7 +23,6 @@ void parse_flags(tr_context_t *ctx, int argc, char *argv[]) {
             if (ctx->options.time_to_sleep_ms <= 10) {
                 ctx->options.time_to_sleep_ms *= 1000;
             }
-            printf("%f option", ctx->options.time_to_sleep_ms);
             break;
         case 'm':
             ctx->final_ttl_index = (uint8_t)parse_num(ctx, UINT8_MAX, 'm') - 1;

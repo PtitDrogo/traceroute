@@ -132,7 +132,6 @@ void print_ready_ttl_groups(tr_context_t *ctx);
 // probe
 uint8_t handle_responded_probes(tr_context_t *ctx, probe_index_t *oldest_i);
 probe_index_t get_decoded_probe_index_from_seq(uint16_t encoded);
-void print_probe_struct(tr_context_t *ctx);
 
 // timers
 double compute_time_difference(const struct timespec past_time);

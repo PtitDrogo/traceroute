@@ -45,7 +45,6 @@ void handle_reply(tr_context_t *ctx) {
             compute_time_difference(*(struct timespec *)reply->payload) - time_slept_ms - time_lost_by_dns_ms;
         if (probe_idx.ttl < ctx->final_ttl_index) {
             ctx->final_ttl_index = probe_idx.ttl;
-            printf("Setting end reply to %d!\n", ctx->final_ttl_index);
         }
     } else if (!use_icmp && outer_icmp->type == ICMP_DEST_UNREACH && outer_icmp->code == ICMP_PORT_UNREACH) {
         struct timespec sent_time = ctx->probes[probe_idx.ttl][probe_idx.probe].sent_at;
