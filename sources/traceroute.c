@@ -29,8 +29,8 @@ int main(int argc, char *argv[]) {
     uint32_t send_i = 0;
     void *packet = ctx.options.use_icmp ? (void *)&icmp_packet : (void *)udp_payload;
     for (; send_i < ctx.options.max_probes_in_flight; send_i++) {
-        ctx.time_slept_ms += sleep_and_measure(SLEEP_TIME_NSEC);
         send_protocol(send_i, &ctx, packet);
+        ctx.time_slept_ms += sleep_and_measure(ctx.options.time_to_sleep_ms);
     }
 
     probe_index_t oldest_i = {0};
@@ -51,18 +51,16 @@ int main(int argc, char *argv[]) {
         }
         uint8_t available_probe_slots = handle_responded_probes(&ctx, &oldest_i);
         for (uint8_t i = 0; i < available_probe_slots; i++) {
-            ctx.time_slept_ms += sleep_and_measure(SLEEP_TIME_NSEC);
             send_protocol(send_i, &ctx, packet);
+            ctx.time_slept_ms += sleep_and_measure(ctx.options.time_to_sleep_ms);
             send_i++;
         }
-        // print_probe_struct(&ctx);
 
         print_ready_ttl_groups(&ctx);
     }
 
-    // In theory we never get here
     cleanup(&ctx);
-    return EXIT_FAILURE; // This is actually a failure if we get here.
+    return EXIT_FAILURE;
 }
 
 static void init(ping_context_t *ctx) {
@@ -70,4 +68,5 @@ static void init(ping_context_t *ctx) {
     ctx->final_ttl_index = DEFAULT_TTL - 1;
     ctx->options.max_probes_per_ttl = DEFAULT_PROBE;
     ctx->options.max_probes_in_flight = DEFAULT_IN_FLIGHT_PROBES;
+    ctx->options.time_to_sleep_ms = SLEEP_TIME_MS;
 }

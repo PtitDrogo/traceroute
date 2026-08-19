@@ -19,25 +19,24 @@
 #include <string.h>
 #include <termios.h>
 
-// Since ICMP Header is 8 bytes, 56 is standard so that its 64 total
 #define BASE_UDP_PORT 33434
 #define PAYLOAD_SIZE 56
 #define DEFAULT_TTL 30
 #define DEFAULT_PROBE 3
-#define MAX_TTL 255 // If youre human youll probably just heap allocate this later using the param given by the user
+#define MAX_TTL 255
 #define MAX_PROBES 10
 #define DEFAULT_IN_FLIGHT_PROBES 16
 #define TIMEOUT_TIME_MS 1000
-#define SLEEP_TIME_NSEC 1000 * 1000 * 10
+#define SLEEP_TIME_MS 10
 
 #define HELP_STRING                                                                                                    \
     "Usage\n"                                                                                                          \
     "ft_traceroute traceroute [ -I ] [ -f first_ttl ]  [ -m max_ttl ] [ -N squeries ] [ -q nqueries ]  [ -z "          \
     "sendwait ]  host \n"                                                                                              \
     "Options:\n"                                                                                                       \
-    "  -f first_ttl\n"                                                                                                   \
-    "           Start from the first_ttl hop(instead of 1)\n"                                                            \
-    "  -I                   Use ICMP ECHO for tracerouting\n"                                                            \
+    "  -f first_ttl\n"                                                                                                 \
+    "           Start from the first_ttl hop(instead of 1)\n"                                                          \
+    "  -I                   Use ICMP ECHO for tracerouting\n"                                                          \
     "  -m max_ttl\n"                                                                                                   \
     "           Set the max number of hops (max TTL to be\n"                                                           \
     "           reached). Default is 30\n"                                                                             \
@@ -45,7 +44,7 @@
     "           Set the max number of hops (max TTL to be\n"                                                           \
     "           reached). Default is 30\n"                                                                             \
     "  -z sendwait\n"                                                                                                  \
-    "           Minimal time interval between probes (default 0).\n"                                                   \
+    "           Minimal time interval between probes (default 10 ms).\n"                                               \
     "           If the value is more than 10, then it specifies a\n"                                                   \
     "           number in milliseconds, else it is a number of\n"                                                      \
     "           seconds (float point values allowed too)\n"                                                            \
@@ -86,6 +85,8 @@ typedef struct {
     uint8_t max_probes_per_ttl;
     uint32_t max_probes_in_flight;
     bool use_icmp;
+    double time_to_sleep_ms;
+    uint8_t first_ttl;
 } options_t;
 
 typedef struct {
@@ -129,6 +130,7 @@ size_t ft_strlcpy(char *dst, const char *src, size_t dsize);
 // parsing
 void parse_flags(ping_context_t *ctx, int argc, char *argv[]);
 long parse_num(ping_context_t *ctx, uint32_t max_range, char opt_char);
+double parse_float(ping_context_t *ctx, uint32_t max_range, char opt_char);
 
 // Getting rid the \\ printing
 void disable_echoctl(void);
@@ -145,6 +147,6 @@ void print_probe_struct(ping_context_t *ctx);
 
 // timers
 double compute_time_difference(const struct timespec past_time);
-double sleep_and_measure(long time_to_sleep_nsec);
+double sleep_and_measure(double time_to_sleep_ms);
 
 #endif

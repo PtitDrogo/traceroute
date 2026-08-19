@@ -7,12 +7,22 @@
 
 void parse_flags(ping_context_t *ctx, int argc, char *argv[]) {
     int32_t opt;
-    const char *optstring = ":hVm:q:IN:";
+    const char *optstring = ":hVm:q:IN:z:";
 
     while ((opt = getopt(argc, argv, optstring)) != -1) {
         switch (opt) {
+        case 'f':
+            ctx->options.max_probes_in_flight = (uint32_t)parse_num(ctx, INT32_MAX, 'N');
+            break;
         case 'N':
             ctx->options.max_probes_in_flight = (uint32_t)parse_num(ctx, INT32_MAX, 'N');
+            break;
+        case 'z':
+            ctx->options.time_to_sleep_ms = parse_float(ctx, INT32_MAX, 'z');
+            if (ctx->options.time_to_sleep_ms <= 10) {
+               ctx->options.time_to_sleep_ms *= 1000; 
+            }
+            printf("%f option",ctx->options.time_to_sleep_ms);
             break;
         case 'I':
             ctx->options.use_icmp = true;
@@ -62,7 +72,25 @@ void parse_flags(ping_context_t *ctx, int argc, char *argv[]) {
 
 long parse_num(ping_context_t *ctx, uint32_t max_range, char opt_char) {
     char *endptr;
-    long val = strtol(optarg, &endptr, 10);
+    long val = strtod(optarg, &endptr);
+    if (*endptr != '\0' || optarg == endptr) {
+        fprintf(stderr, "traceroute: Invalid arguments '%s'\n", optarg);
+        cleanup(ctx);
+        exit(1);
+    }
+    if (val <= 0 || val > max_range) {
+        fprintf(stderr, "traceroute: invalid -%c value: '%s': out of range: 0 <= value <= %d\n", opt_char, optarg,
+                max_range);
+        cleanup(ctx);
+        exit(1);
+    }
+    return val;
+}
+
+
+double parse_float(ping_context_t *ctx, uint32_t max_range, char opt_char) {
+    char *endptr;
+    double val = strtod(optarg, &endptr);
     if (*endptr != '\0' || optarg == endptr) {
         fprintf(stderr, "traceroute: Invalid arguments '%s'\n", optarg);
         cleanup(ctx);
