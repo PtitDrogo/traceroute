@@ -1,13 +1,13 @@
 #include "../includes/traceroute.h"
 
-static void init(ping_context_t *ctx);
+static void init(tr_context_t *ctx);
 
 int main(int argc, char *argv[]) {
     if (geteuid() != 0) {
         printf("ping: sudo rights are required, exiting.\n");
         return EXIT_FAILURE;
     }
-    ping_context_t ctx = {0};
+    tr_context_t ctx = {0};
     init(&ctx);
     parse_flags(&ctx, argc, argv);
     struct addrinfo hints = {0};
@@ -26,9 +26,9 @@ int main(int argc, char *argv[]) {
     char udp_payload[PAYLOAD_SIZE] = {0};
 
     print_start_string(&ctx);
-    uint32_t send_i = ctx.options.first_ttl - 1;
+    uint32_t send_i = 0;
     void *packet = ctx.options.use_icmp ? (void *)&icmp_packet : (void *)udp_payload;
-    for (; send_i < ctx.options.max_probes_in_flight + ctx.options.first_ttl; send_i++) {
+    for (; send_i < ctx.options.max_probes_in_flight; send_i++) {
         send_protocol(send_i, &ctx, packet);
         ctx.time_slept_ms += sleep_and_measure(ctx.options.time_to_sleep_ms);
     }
@@ -63,8 +63,7 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
 }
 
-static void init(ping_context_t *ctx) {
-    disable_echoctl();
+static void init(tr_context_t *ctx) {
     ctx->final_ttl_index = DEFAULT_TTL - 1;
     ctx->options.max_probes_per_ttl = DEFAULT_PROBE;
     ctx->options.max_probes_in_flight = DEFAULT_IN_FLIGHT_PROBES;

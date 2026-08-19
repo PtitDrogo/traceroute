@@ -13,7 +13,6 @@ OBJS	=	$(patsubst $(SRCS_DIR)%.c, $(OBJS_DIR)%.o, $(SRCS))
 SRCS =		$(SRCS_DIR)/traceroute.c \
 			$(SRCS_DIR)/checksum.c \
 			$(SRCS_DIR)/send.c \
-			$(SRCS_DIR)/echoctl.c \
 			$(SRCS_DIR)/parser.c \
 			$(SRCS_DIR)/socket.c \
 			$(SRCS_DIR)/reply.c \

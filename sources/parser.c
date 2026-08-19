@@ -1,26 +1,19 @@
 #include "../includes/traceroute.h"
 
-// Flags to do
-//  -> number of Probes
-//  -> The TTL / number of hops
-//  -> use UDP / use ICMP (Hard !)
-
-void parse_flags(ping_context_t *ctx, int argc, char *argv[]) {
+void parse_flags(tr_context_t *ctx, int argc, char *argv[]) {
     int32_t opt;
-    const char *optstring = ":hVm:q:IN:z:nf:";
+    const char *optstring = ":hVm:q:IN:z:nr";
 
     while ((opt = getopt(argc, argv, optstring)) != -1) {
         switch (opt) {
+        case 'r':
+            ctx->options.skip_routing = true;
+            break;
         case 'n':
             ctx->options.skip_dns = true;
             break;
-        case 'f':
-            ctx->options.first_ttl = (uint8_t)parse_num(ctx, UINT8_MAX, 'f');
-            if (ctx->options.first_ttl <= 0) {
-                fprintf(stderr, "first hop out of range\n");
-                cleanup(ctx);
-                exit(1);
-            }
+        case 'I':
+            ctx->options.use_icmp = true;
             break;
         case 'N':
             ctx->options.max_probes_in_flight = (uint32_t)parse_num(ctx, INT32_MAX, 'N');
@@ -31,9 +24,6 @@ void parse_flags(ping_context_t *ctx, int argc, char *argv[]) {
                 ctx->options.time_to_sleep_ms *= 1000;
             }
             printf("%f option", ctx->options.time_to_sleep_ms);
-            break;
-        case 'I':
-            ctx->options.use_icmp = true;
             break;
         case 'm':
             ctx->final_ttl_index = (uint8_t)parse_num(ctx, UINT8_MAX, 'm') - 1;
@@ -79,7 +69,7 @@ void parse_flags(ping_context_t *ctx, int argc, char *argv[]) {
     return;
 }
 
-long parse_num(ping_context_t *ctx, uint32_t max_range, char opt_char) {
+long parse_num(tr_context_t *ctx, uint32_t max_range, char opt_char) {
     char *endptr;
     long val = strtod(optarg, &endptr);
     if (*endptr != '\0' || optarg == endptr) {
@@ -96,7 +86,7 @@ long parse_num(ping_context_t *ctx, uint32_t max_range, char opt_char) {
     return val;
 }
 
-double parse_float(ping_context_t *ctx, uint32_t max_range, char opt_char) {
+double parse_float(tr_context_t *ctx, uint32_t max_range, char opt_char) {
     char *endptr;
     double val = strtod(optarg, &endptr);
     if (*endptr != '\0' || optarg == endptr) {

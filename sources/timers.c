@@ -12,7 +12,6 @@ double sleep_and_measure(double time_to_sleep_ms) {
     nanosleep(&pause, NULL);
     clock_gettime(CLOCK_MONOTONIC, &end);
     double slept_ms = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_nsec - start.tv_nsec) / 1000000.0;
-    // printf("I just slept %f ms\n", slept_ms);
     return slept_ms;
 }
 

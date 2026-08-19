@@ -1,7 +1,6 @@
 
 #include "../includes/traceroute.h"
 
-// This write the proper MaybeResolvedAddressString (ip string) to dest buf
 void get_hostname_string_from_ip(const char *ip_str, char *dest_buf, size_t buf_len) {
     if (!ip_str || !dest_buf || buf_len == 0)
         return;
@@ -36,107 +35,55 @@ icmp_packet_t build_icmp_packet() {
     return icmp_packet;
 }
 
-void cleanup(ping_context_t *ctx) {
+void cleanup(tr_context_t *ctx) {
     if (ctx->destination_addrinfo)
         freeaddrinfo(ctx->destination_addrinfo);
     if (ctx->send_sock >= 0)
         close(ctx->send_sock);
     if (ctx->recv_sock >= 0)
         close(ctx->recv_sock);
-    restore_termios();
 }
 
-void update_packet(void *packet, probe_index_t index, ping_context_t *ctx) {
+void update_packet(void *packet, probe_index_t index, tr_context_t *ctx) {
     if (ctx->options.use_icmp) {
         icmp_packet_t *icmp = (icmp_packet_t *)packet;
         size_t packet_size = sizeof(struct icmphdr) + PAYLOAD_SIZE;
         clock_gettime(CLOCK_REALTIME, (struct timespec *)icmp->payload);
         icmp->header.un.echo.sequence = htons(1);
-        icmp->header.un.echo.sequence = htons((uint16_t)(index.ttl * 10 + index.probe));
+        icmp->header.un.echo.sequence = htons((uint16_t)(index.ttl * MAX_PROBES + index.probe));
         icmp->header.checksum = 0;
         icmp->header.checksum = checksum((uint16_t *)icmp, packet_size);
 
-        // printf("ready to send packet: sequence :%d, ", ntohs(icmp->header.un.echo.sequence));
-        // printf("ttl i: %d, probe i: %d\n", get_probe_index_from_sequence(ntohs(icmp->header.un.echo.sequence)).ttl,
-        //        get_probe_index_from_sequence(ntohs(icmp->header.un.echo.sequence)).probe);
     } else {
         char *udp_payload = (char *)packet;
         struct sockaddr_in *dest = (struct sockaddr_in *)ctx->destination_addrinfo->ai_addr;
         clock_gettime(CLOCK_REALTIME, (struct timespec *)udp_payload);
         dest->sin_port = htons(BASE_UDP_PORT + index.ttl * ctx->options.max_probes_per_ttl + index.probe);
-        // printf("port used is %d\n", BASE_UDP_PORT + index.probe);
     }
 }
 
-void send_packet(void *packet, ping_context_t *ctx) {
+void send_packet(void *packet, tr_context_t *ctx) {
     size_t packet_size = ctx->options.use_icmp ? sizeof(struct icmphdr) + PAYLOAD_SIZE : PAYLOAD_SIZE;
 
-    // static bool did_print = false;
-    // // Printf nonsense start here
-    // //  1. Format the socket address (IP + Port) into a readable string
-    // if (did_print == false) {
-
-    //     char ip_str[INET6_ADDRSTRLEN] = {0};
-    //     char serv_str[NI_MAXSERV] = {0};
-
-    //     getnameinfo(ctx->destination_addrinfo->ai_addr, ctx->destination_addrinfo->ai_addrlen, ip_str,
-    //     sizeof(ip_str),
-    //                 serv_str, sizeof(serv_str), NI_NUMERICHOST | NI_NUMERICSERV);
-
-    //     // 2. Print high-level sendto metadata
-    //     printf("sendto(\n"
-    //            "    sockfd       = %d\n"
-    //            "    len          = %zu\n"
-    //            "    flags        = %d\n"
-    //            "    dest_addr    = %s:%s\n"
-    //            "    dest_addrlen = %u\n"
-    //            ")\n",
-    //            ctx->send_sock, packet_size, 0, ip_str, serv_str, (unsigned
-    //            int)ctx->destination_addrinfo->ai_addrlen);
-
-    //     // 3. Print the raw hex content of the packet buffer
-    //     printf("Buffer Content (Hex):\n    ");
-    //     unsigned char *buf = (unsigned char *)packet;
-    //     for (size_t i = 0; i < packet_size; i++) {
-    //         printf("%02x ", buf[i]);
-    //         if ((i + 1) % 16 == 0) { // Line break every 16 bytes for readability
-    //             printf("\n    ");
-    //         }
-    //     }
-    //     struct sockaddr_in *sin = (struct sockaddr_in *)ctx->destination_addrinfo->ai_addr;
-
-    //     printf("\nSending to IP: %s | Port: %d (ntohs: %d)\n", inet_ntoa(sin->sin_addr),
-    //            sin->sin_port,       // Raw network byte order
-    //            ntohs(sin->sin_port) // Host byte order (Human readable)
-    //     );
-    //     printf("\n");
-    // }
-    // did_print = true;
-    // printf nonsense ends here
-
-    // Execute sendto
     int err = sendto(ctx->send_sock, packet, packet_size, 0, ctx->destination_addrinfo->ai_addr,
                      ctx->destination_addrinfo->ai_addrlen);
     if (err == -1) {
-        fprintf(stderr, "ping: sendto: %s\n", strerror(errno));
+        fprintf(stderr, "traceroute: sendto: %s\n", strerror(errno));
         cleanup(ctx);
         exit(1);
     }
 }
 
-void send_protocol(uint8_t send_i, ping_context_t *ctx, void *packet) {
+void send_protocol(uint8_t send_i, tr_context_t *ctx, void *packet) {
 
     probe_index_t index = {.ttl = send_i / ctx->options.max_probes_per_ttl,
                            .probe = send_i % ctx->options.max_probes_per_ttl};
 
-    // printf("Updating socket to have ttl %d\n", index.ttl + 1);
     update_socket(ctx, index.ttl + 1);
     update_packet(packet, index, ctx);
     send_packet(packet, ctx);
-    // printf("i ttl: %d, i probe: %d\n", index.ttl, index.probe);
     clock_gettime(CLOCK_REALTIME, &ctx->probes[index.ttl][index.probe].sent_at);
     ctx->probes[index.ttl][index.probe].status = PENDING;
     ctx->probes[index.ttl][index.probe].time_slept_when_sent_ms = ctx->time_slept_ms;
     ctx->probes[index.ttl][index.probe].time_lost_by_dns_when_sent_ms = ctx->time_lost_by_dns;
-    // printf("Launched at %ld\n", ctx->probes[index.ttl][index.probe].sent_at.tv_sec);
 }

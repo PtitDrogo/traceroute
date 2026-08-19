@@ -1,14 +1,14 @@
 #include "../includes/traceroute.h"
 
-// Only use for ICMP :)
+// Wait doesnt that break with ICMP ?????
 probe_index_t get_decoded_probe_index_from_seq(uint16_t encoded) {
     probe_index_t idx = {0};
-    idx.ttl = (encoded) / 10;
-    idx.probe = (encoded) % 10;
+    idx.ttl = (encoded) / MAX_PROBES;
+    idx.probe = (encoded) % MAX_PROBES;
     return idx;
 }
 
-void print_probe_struct(ping_context_t *ctx) {
+void print_probe_struct(tr_context_t *ctx) {
     static const char *status_names[] = {"PENDING", "RESPONDED", "TIMEOUT"};
     for (uint8_t ttl = 0; ttl <= ctx->final_ttl_index; ttl++) {
         for (uint8_t probe = 0; probe < ctx->options.max_probes_per_ttl; probe++) {
@@ -19,7 +19,7 @@ void print_probe_struct(ping_context_t *ctx) {
     }
 }
 
-uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i) {
+uint8_t handle_responded_probes(tr_context_t *ctx, probe_index_t *oldest_i) {
     uint8_t freed = 0;
     probe_index_t idx = *oldest_i;
 

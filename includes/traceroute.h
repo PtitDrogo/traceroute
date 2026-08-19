@@ -31,11 +31,8 @@
 
 #define HELP_STRING                                                                                                    \
     "Usage\n"                                                                                                          \
-    "ft_traceroute traceroute [ -I ] [ -f first_ttl ]  [ -m max_ttl ] [ -N squeries ] [ -q nqueries ]  [ -z "          \
-    "sendwait ]  host \n"                                                                                              \
+    "ft_traceroute traceroute [ -InrV ] [ -m max_ttl ] [ -N squeries ] [ -q nqueries ]  [ -z sendwait ]  host\n"       \
     "Options:\n"                                                                                                       \
-    "  -f first_ttl\n"                                                                                                 \
-    "           Start from the first_ttl hop(instead of 1)\n"                                                          \
     "  -I                   Use ICMP ECHO for tracerouting\n"                                                          \
     "  -m max_ttl\n"                                                                                                   \
     "           Set the max number of hops (max TTL to be\n"                                                           \
@@ -49,20 +46,16 @@
     "           If the value is more than 10, then it specifies a\n"                                                   \
     "           number in milliseconds, else it is a number of\n"                                                      \
     "           seconds (float point values allowed too)\n"                                                            \
-    "  -V                   print version and exit\n"                                                                  \
+    "  -r       Bypass the normal routing and send directly to a\n"                                                    \
+    "           host on an attached network\n"                                                                         \
+    "  -V       print version and exit\n"                                                                              \
     "Arguments:\n"                                                                                                     \
     "+     host          The host to traceroute to\n"
 
-// Contains the icmp header and the payload
 typedef struct {
     struct icmphdr header;
     char payload[UINT16_MAX];
 } icmp_packet_t;
-
-typedef struct {
-    struct udphdr header;
-    char payload[UINT16_MAX];
-} udp_packet_t;
 
 typedef struct {
     char resolved_address[NI_MAXHOST];
@@ -71,24 +64,22 @@ typedef struct {
 typedef enum { NOT_SENT, PENDING, RESPONDED, TIMEOUT } probe_status;
 
 typedef struct {
+    char ip[INET_ADDRSTRLEN];
     struct timespec sent_at;
+    probe_status status;
     double time_slept_when_sent_ms;
     double time_lost_by_dns_when_sent_ms;
-    probe_status status;
-    // char resolved_address[NI_MAXHOST]; //in theory I dont need to store this ? I can just compute it when I want to
-    // print it, that saves a LOT of memory too :)
     double time_rtt;
-    char ip[INET_ADDRSTRLEN];
 
 } probe_record_t;
 
 typedef struct {
     uint8_t max_probes_per_ttl;
     uint32_t max_probes_in_flight;
-    bool use_icmp;
     double time_to_sleep_ms;
-    uint8_t first_ttl;
+    bool use_icmp;
     bool skip_dns;
+    bool skip_routing;
 } options_t;
 
 typedef struct {
@@ -109,43 +100,39 @@ typedef struct {
     int recv_sock;
     double time_lost_by_dns;
     double time_slept_ms;
-} ping_context_t;
+} tr_context_t;
 
 // send
 icmp_packet_t build_icmp_packet();
-void create_socket(ping_context_t *ctx);
-void update_socket(ping_context_t *ctx, uint8_t ttl);
+void create_socket(tr_context_t *ctx);
+void update_socket(tr_context_t *ctx, uint8_t ttl);
 uint16_t checksum(const uint16_t *data, size_t size);
 
-void update_packet(void *packet, probe_index_t index, ping_context_t *ctx);
-void send_packet(void *packet, ping_context_t *ctx);
-void send_protocol(uint8_t send_i, ping_context_t *ctx, void *packet);
+void update_packet(void *packet, probe_index_t index, tr_context_t *ctx);
+void send_packet(void *packet, tr_context_t *ctx);
+void send_protocol(uint8_t send_i, tr_context_t *ctx, void *packet);
 
 // reply
-void handle_reply(ping_context_t *ctx);
+void handle_reply(tr_context_t *ctx);
 
 // helpers
-void cleanup(ping_context_t *ctx);
+void cleanup(tr_context_t *ctx);
 void get_hostname_string_from_ip(const char *ip_str, char *dest_buf, size_t buf_len);
 size_t ft_strlcpy(char *dst, const char *src, size_t dsize);
 
 // parsing
-void parse_flags(ping_context_t *ctx, int argc, char *argv[]);
-long parse_num(ping_context_t *ctx, uint32_t max_range, char opt_char);
-double parse_float(ping_context_t *ctx, uint32_t max_range, char opt_char);
-
-// Getting rid the \\ printing
-void disable_echoctl(void);
-void restore_termios(void);
+void parse_flags(tr_context_t *ctx, int argc, char *argv[]);
+long parse_num(tr_context_t *ctx, uint32_t max_range, char opt_char);
+double parse_float(tr_context_t *ctx, uint32_t max_range, char opt_char);
 
 // print
-void print_start_string(const ping_context_t *ctx);
-void print_ready_ttl_groups(ping_context_t *ctx);
+void print_start_string(const tr_context_t *ctx);
+void print_ready_ttl_groups(tr_context_t *ctx);
 
 // probe
-uint8_t handle_responded_probes(ping_context_t *ctx, probe_index_t *oldest_i);
+uint8_t handle_responded_probes(tr_context_t *ctx, probe_index_t *oldest_i);
 probe_index_t get_decoded_probe_index_from_seq(uint16_t encoded);
-void print_probe_struct(ping_context_t *ctx);
+void print_probe_struct(tr_context_t *ctx);
 
 // timers
 double compute_time_difference(const struct timespec past_time);
