@@ -1,5 +1,5 @@
-#ifndef FT_PING
-#define FT_PING
+#ifndef FT_TRACEROUTE
+#define FT_TRACEROUTE
 
 #include <arpa/inet.h>
 #include <stdio.h>

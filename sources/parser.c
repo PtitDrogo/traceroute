@@ -37,12 +37,12 @@ void parse_flags(tr_context_t *ctx, int argc, char *argv[]) {
             printf("ft_traceroute from tfreydie.\n");
             exit(0);
         case ':': // Missing required argument
-            fprintf(stderr, "ping: option requires an argument --%c\n", optopt);
+            fprintf(stderr, "traceroute: option requires an argument --%c\n", optopt);
             printf(HELP_STRING);
             exit(1);
             break;
         case '?':
-            printf("ping: invalid option -- '%c'\n", optopt);
+            printf("traceroute: invalid option -- '%c'\n", optopt);
             printf(HELP_STRING);
             exit(1);
             break;
